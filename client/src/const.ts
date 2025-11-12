@@ -1,6 +1,8 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-export const APP_TITLE = import.meta.env.VITE_APP_TITLE || "App";
+const rawAppTitle = import.meta.env.VITE_APP_TITLE;
+
+export const APP_TITLE = rawAppTitle && rawAppTitle.trim().length > 0 ? rawAppTitle.trim() : "App";
 
 export const APP_LOGO =
   import.meta.env.VITE_APP_LOGO ||

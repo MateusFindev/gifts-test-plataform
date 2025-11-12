@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -12,6 +13,7 @@ import ExternalAssessment from "./pages/ExternalAssessment";
 import Results from "./pages/Results";
 import CheckResult from "./pages/CheckResult";
 import GiftsExplanation from "./pages/GiftsExplanation";
+import { APP_TITLE } from "./const";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -37,6 +39,12 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = APP_TITLE;
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider
