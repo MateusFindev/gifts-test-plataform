@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
-import { ChevronDown, ChevronUp, Home, BookOpen } from "lucide-react";
+import { ChevronDown, ChevronUp, Home, BookOpen, ArrowLeft } from "lucide-react";
 import giftsExplanations from "@shared/giftsExplanations.json";
 
 // Mapeamento de cores para classes Tailwind
@@ -42,7 +42,7 @@ const categoryDescriptions: Record<string, { title: string; description: string;
     ]
   },
   red: {
-    title: "🔴 Categoria Vermelha - Pregação do Evangelho e Liderança",
+    title: "🟥 Categoria Vermelha - Pregação do Evangelho e Liderança",
     description: "Os dons listados na categoria vermelha estão relacionados com a pregação do Evangelho e com ajudar pessoas a crescerem na fé. Essa categoria reúne dons que capacitam pessoas a exercerem papéis de liderança na igreja.",
     subcategories: [
       "Propagação do Evangelho: Evangelização, Missionário",
@@ -169,6 +169,15 @@ export default function GiftsExplanation() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 py-8 px-4">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => setLocation("/")}
+        aria-label="Voltar para a página inicial"
+        className="fixed bottom-6 right-6 z-50 rounded-full bg-white/90 shadow-lg hover:bg-white"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <Card>
@@ -204,7 +213,7 @@ export default function GiftsExplanation() {
             </p>
             <p className="text-gray-700 leading-relaxed">
               Os 30 dons estão organizados em <strong>3 categorias</strong> representadas por cores:
-              🟩 Verde (Revelação de Deus na Criação), 🔴 Vermelho (Pregação e Liderança) e 🟦 Azul (Poder Sobrenatural).
+              🟩 Verde (Revelação de Deus na Criação), 🟥 Vermelho (Pregação e Liderança) e 🟦 Azul (Poder Sobrenatural).
             </p>
             <p className="text-sm text-gray-600 italic">
               Clique em cada dom para ver sua definição, referências bíblicas, tarefas possíveis, perigos e dicas.

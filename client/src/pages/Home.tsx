@@ -106,6 +106,10 @@ export default function Home() {
               <span className="font-bold text-blue-600 flex-shrink-0">4.</span>
               <span>Receba seu resultado por email identificando seus Dons Manifestos e Dons Latentes</span>
             </li>
+            <li className="flex gap-3">
+              <span className="font-bold text-blue-600 flex-shrink-0">5.</span>
+              <span>Apresente o resultado do teste ao seu líder ministerial para planejar próximos passos</span>
+            </li>
           </ol>
         </div>
       </div>
@@ -117,7 +121,7 @@ export default function Home() {
           <img 
             src="/controlfin-logo.png" 
             alt="Control Fin Solutions" 
-            className="h-16 opacity-80 hover:opacity-100 transition-opacity"
+            className="h-20 opacity-80 hover:opacity-100 transition-opacity"
           />
         </div>
       </footer>

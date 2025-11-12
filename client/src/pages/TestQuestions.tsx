@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -10,6 +10,9 @@ import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 const QUESTIONS_PER_SECTION = 30;
 const TOTAL_SECTIONS = 6;
+const HIDDEN_CELIBACY_QUESTION_INDEXES = [2, 32, 62, 122, 152] as const;
+const HIDDEN_CELIBACY_SET = new Set<number>(HIDDEN_CELIBACY_QUESTION_INDEXES);
+const EMPTY_SET = new Set<number>();
 const STORAGE_KEY_PREFIX = "giftTest_";
 
 export default function TestQuestions() {
@@ -20,16 +23,41 @@ export default function TestQuestions() {
   const [testId, setTestId] = useState<number | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
+  const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
+  const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
+  const savedPositionRef = useRef<number | null>(null);
+
+  const baseSectionIndexes = useMemo(
+    () =>
+      Array.from({ length: TOTAL_SECTIONS }, (_, sectionIndex) =>
+        Array.from({ length: QUESTIONS_PER_SECTION }, (_, questionIndex) => sectionIndex * QUESTIONS_PER_SECTION + questionIndex)
+      ),
+    []
+  );
+
+  const hiddenIndexes = useMemo(() => (maritalStatus === "married" ? HIDDEN_CELIBACY_SET : EMPTY_SET), [maritalStatus]);
+
+  const visibleQuestionIndexes = useMemo(
+    () => baseSectionIndexes.map(section => section.filter(index => !hiddenIndexes.has(index))),
+    [baseSectionIndexes, hiddenIndexes]
+  );
+
+  const flattenedVisibleQuestions = useMemo(() => visibleQuestionIndexes.flat(), [visibleQuestionIndexes]);
 
   // Carregar progresso do localStorage
   useEffect(() => {
+    const storedStatus = sessionStorage.getItem("testMaritalStatus");
+    if (storedStatus === "married" || storedStatus === "single") {
+      setMaritalStatus(storedStatus);
+    }
+
     const storedTestId = sessionStorage.getItem("currentTestId");
     if (!storedTestId) {
       toast.error("Teste não encontrado. Redirecionando...");
       setLocation("/test/info");
       return;
     }
-    
+
     const id = parseInt(storedTestId);
     setTestId(id);
 
@@ -46,11 +74,17 @@ export default function TestQuestions() {
       }
     }
 
-    // Carregar posição atual
+    const savedGlobalIndex = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_globalIndex`);
+    if (savedGlobalIndex !== null) {
+      savedPositionRef.current = parseInt(savedGlobalIndex);
+      return;
+    }
+
     const savedSection = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_section`);
     const savedQuestion = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_question`);
-    if (savedSection !== null) setCurrentSection(parseInt(savedSection));
-    if (savedQuestion !== null) setCurrentQuestion(parseInt(savedQuestion));
+    if (savedSection !== null && savedQuestion !== null) {
+      savedPositionRef.current = parseInt(savedSection) * QUESTIONS_PER_SECTION + parseInt(savedQuestion);
+    }
   }, [setLocation]);
 
   // Salvar progresso no localStorage sempre que as respostas mudarem
@@ -58,10 +92,94 @@ export default function TestQuestions() {
     if (testId !== null) {
       const storageKey = `${STORAGE_KEY_PREFIX}${testId}_answers`;
       localStorage.setItem(storageKey, JSON.stringify(answers));
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_section`, currentSection.toString());
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_question`, currentQuestion.toString());
+      const fallbackGlobalIndex =
+        globalQuestionIndex ??
+        flattenedVisibleQuestions.find(index => answers[index] === -1) ??
+        flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1] ??
+        0;
+      const baseSectionForStorage = Math.floor(fallbackGlobalIndex / QUESTIONS_PER_SECTION);
+      const baseQuestionForStorage = fallbackGlobalIndex % QUESTIONS_PER_SECTION;
+
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_globalIndex`, fallbackGlobalIndex.toString());
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_section`, baseSectionForStorage.toString());
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_question`, baseQuestionForStorage.toString());
     }
-  }, [answers, testId, currentSection, currentQuestion]);
+  }, [
+    answers,
+    testId,
+    currentSection,
+    currentQuestion,
+    globalQuestionIndex,
+    flattenedVisibleQuestions,
+  ]);
+
+  useEffect(() => {
+    if (maritalStatus !== "married") {
+      return;
+    }
+
+    setAnswers(prev => {
+      let changed = false;
+      const updated = [...prev];
+
+      HIDDEN_CELIBACY_QUESTION_INDEXES.forEach(index => {
+        if (updated[index] === -1) {
+          updated[index] = 0;
+          changed = true;
+        }
+      });
+
+      return changed ? updated : prev;
+    });
+  }, [maritalStatus]);
+
+  useEffect(() => {
+    setHasInitializedPosition(false);
+  }, [maritalStatus]);
+
+  useEffect(() => {
+    if (hasInitializedPosition) {
+      return;
+    }
+
+    if (!flattenedVisibleQuestions.length) {
+      return;
+    }
+
+    let targetGlobalIndex: number;
+
+    if (savedPositionRef.current !== null) {
+      const saved = savedPositionRef.current;
+      const candidate = flattenedVisibleQuestions.find(index => index >= saved);
+      targetGlobalIndex = candidate ?? flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
+      savedPositionRef.current = null;
+    } else {
+      const firstUnanswered = flattenedVisibleQuestions.find(index => answers[index] === -1);
+      targetGlobalIndex = firstUnanswered ?? flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
+    }
+
+    let targetSection = 0;
+    let targetQuestion = 0;
+
+    visibleQuestionIndexes.some((sectionQuestions, sectionIndex) => {
+      const questionIndex = sectionQuestions.indexOf(targetGlobalIndex);
+      if (questionIndex !== -1) {
+        targetSection = sectionIndex;
+        targetQuestion = questionIndex;
+        return true;
+      }
+      return false;
+    });
+
+    setCurrentSection(targetSection);
+    setCurrentQuestion(targetQuestion);
+    setHasInitializedPosition(true);
+  }, [
+    answers,
+    flattenedVisibleQuestions,
+    visibleQuestionIndexes,
+    hasInitializedPosition,
+  ]);
 
   const saveSelfAnswersMutation = trpc.giftTest.saveSelfAnswers.useMutation({
     onSuccess: (data) => {
@@ -83,17 +201,21 @@ export default function TestQuestions() {
     },
   });
 
-  const globalQuestionIndex = currentSection * QUESTIONS_PER_SECTION + currentQuestion;
-  const questionText = SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex];
+  const currentSectionQuestions = visibleQuestionIndexes[currentSection] ?? [];
+  const globalQuestionIndex = currentSectionQuestions[currentQuestion];
+  const questionText = globalQuestionIndex !== undefined ? SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex] : "";
   const scale = SECTION_SCALES[currentSection];
-  const currentAnswer = answers[globalQuestionIndex];
+  const currentAnswer = globalQuestionIndex !== undefined ? answers[globalQuestionIndex] : -1;
 
-  const totalProgress = answers.filter((a) => a !== -1).length;
-  const sectionProgress = answers
-    .slice(currentSection * QUESTIONS_PER_SECTION, (currentSection + 1) * QUESTIONS_PER_SECTION)
-    .filter((a) => a !== -1).length;
+  const totalVisibleQuestions = flattenedVisibleQuestions.length;
+  const totalProgress = flattenedVisibleQuestions.filter(index => answers[index] !== -1).length;
+  const totalProgressPercentage = totalVisibleQuestions > 0 ? (totalProgress / totalVisibleQuestions) * 100 : 0;
 
   const handleAnswerSelect = (value: number) => {
+    if (globalQuestionIndex === undefined) {
+      return;
+    }
+
     const newAnswers = [...answers];
     newAnswers[globalQuestionIndex] = value;
     setAnswers(newAnswers);
@@ -105,10 +227,15 @@ export default function TestQuestions() {
     // Iniciar transição visual
     setIsTransitioning(true);
 
+    const hasQuestionsInSection = currentSectionQuestions.length > 0;
+    const isLastQuestionInSection = hasQuestionsInSection
+      ? currentQuestion >= currentSectionQuestions.length - 1
+      : true;
+
     // Auto-avançar para próxima pergunta após 1500ms (1,5 segundos)
     setTimeout(() => {
       setIsTransitioning(false);
-      if (currentQuestion < QUESTIONS_PER_SECTION - 1) {
+      if (hasQuestionsInSection && !isLastQuestionInSection) {
         setCurrentQuestion(currentQuestion + 1);
       } else if (currentSection < TOTAL_SECTIONS - 1) {
         setCurrentSection(currentSection + 1);
@@ -122,19 +249,30 @@ export default function TestQuestions() {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
     } else if (currentSection > 0) {
-      setCurrentSection(currentSection - 1);
-      setCurrentQuestion(QUESTIONS_PER_SECTION - 1);
+      const previousSection = currentSection - 1;
+      const previousSectionQuestions = visibleQuestionIndexes[previousSection] ?? [];
+      setCurrentSection(previousSection);
+      setCurrentQuestion(Math.max(previousSectionQuestions.length - 1, 0));
       window.scrollTo(0, 0);
     }
   };
 
   const handleNext = () => {
+    if (currentSectionQuestions.length === 0) {
+      if (currentSection < TOTAL_SECTIONS - 1) {
+        setCurrentSection(currentSection + 1);
+        setCurrentQuestion(0);
+        window.scrollTo(0, 0);
+      }
+      return;
+    }
+
     if (currentAnswer === -1) {
       toast.error("Por favor, selecione uma resposta antes de continuar");
       return;
     }
 
-    if (currentQuestion < QUESTIONS_PER_SECTION - 1) {
+    if (currentQuestion < currentSectionQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else if (currentSection < TOTAL_SECTIONS - 1) {
       setCurrentSection(currentSection + 1);
@@ -144,8 +282,8 @@ export default function TestQuestions() {
   };
 
   const handleFinish = () => {
-    const allAnswered = answers.every((a) => a !== -1);
-    if (!allAnswered) {
+    const visibleQuestionsAnswered = flattenedVisibleQuestions.every(index => answers[index] !== -1);
+    if (!visibleQuestionsAnswered) {
       toast.error("Por favor, responda todas as perguntas antes de finalizar");
       return;
     }
@@ -155,20 +293,32 @@ export default function TestQuestions() {
       return;
     }
 
+    const finalAnswers = maritalStatus === "married"
+      ? answers.map((value, index) => {
+          if (HIDDEN_CELIBACY_SET.has(index)) {
+            return value === -1 ? 0 : value;
+          }
+          return value;
+        })
+      : answers;
+
     saveSelfAnswersMutation.mutate({
       testId,
-      answers,
+      answers: finalAnswers,
     });
   };
 
   const isLastSection = currentSection === TOTAL_SECTIONS - 1;
-  const isLastQuestion = currentQuestion === QUESTIONS_PER_SECTION - 1;
-  const allAnswered = answers.every((a) => a !== -1);
+  const isLastQuestion = currentSectionQuestions.length > 0
+    ? currentQuestion === currentSectionQuestions.length - 1
+    : true;
+  const allAnswered = flattenedVisibleQuestions.every(index => answers[index] !== -1);
 
   // Obter o texto da resposta selecionada
-  const selectedOptionText = currentAnswer !== -1 
-    ? scale.options.find(opt => opt.value === currentAnswer)?.label.toUpperCase()
-    : null;
+  const selectedOptionText =
+    globalQuestionIndex !== undefined && currentAnswer !== -1
+      ? scale.options.find(opt => opt.value === currentAnswer)?.label.toUpperCase()
+      : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
@@ -182,13 +332,12 @@ export default function TestQuestions() {
                   Seção {currentSection + 1} de {TOTAL_SECTIONS}
                 </CardTitle>
                 <span className="text-sm text-gray-600">
-                  {totalProgress} / 180 respondidas
+                  {totalProgress} / {totalVisibleQuestions} respondidas
                 </span>
               </div>
-              <Progress value={(totalProgress / 180) * 100} className="h-2" />
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Pergunta {currentQuestion + 1} de {QUESTIONS_PER_SECTION}</span>
-                <span>{sectionProgress} / {QUESTIONS_PER_SECTION} nesta seção</span>
+              <Progress value={totalProgressPercentage} className="h-2" />
+              <div className="text-sm text-gray-600 text-center">
+                Pergunta {Math.min(currentQuestion + 1, Math.max(currentSectionQuestions.length, 1))} de {Math.max(currentSectionQuestions.length, 1)}
               </div>
             </div>
           </CardHeader>
