@@ -1,0 +1,17 @@
+# build artefacts
+dist
+client/dist
+drizzle/*.sql
+drizzle/meta
+# dependencies
+node_modules
+.pnpm-store
+# vcs / editors
+.git
+.gitignore
+.vscode
+.DS_Store
+# misc
+*.log
+.env*
+!.env.example

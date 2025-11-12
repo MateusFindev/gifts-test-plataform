@@ -1,0 +1,272 @@
+[
+  {
+    "name": "Criatividade Artística",
+    "definition": "Esse dom capacita cristãos a usarem suas habilidades artísticas para glorificar a Deus e edificar a igreja.",
+    "references": "Êxodo 31.1-5; Êxodo 35.30-35; 1 Crônicas 15.16-22; Salmos 33.1-3",
+    "tasks": "Artes visuais, teatro, decoração de ambientes da igreja, confecção de materiais gráficos, produção de vídeos, música instrumental, dança, apresentações criativas em cultos ou eventos.",
+    "dangers": "Alguns cristãos podem focar mais na estética do que na mensagem espiritual. Pode haver tendência de buscar reconhecimento humano. Outros podem se isolar, achando que a arte não é “espiritual”.",
+    "tips": "Utilize suas habilidades artísticas para comunicar verdades espirituais. Trabalhe em equipe com outros ministérios da igreja. Busque aprimoramento técnico e sensibilidade espiritual.",
+    "color": "green"
+  },
+  {
+    "name": "Habilidade Manual",
+    "definition": "Esse dom capacita cristãos a usarem sua habilidade manual de tal forma que a igreja seja edificada por meio dela.",
+    "references": "Êxodo 31.1-6; 2 Reis 12.11-13; 2 Crônicas 34.9-13; Atos 9.3; Atos 18.3",
+    "tasks": "Ajuda aos vizinhos, missão transcultural, jardinagem, construção, trabalho de manutenção.",
+    "dangers": "Alguns cristãos com esse dom sofrem de sentimentos de inferioridade, achando que seu trabalho não é “espiritual”. Outros se limitam a exercer suas habilidades apenas fora da igreja.",
+    "tips": "Observe outros que têm o mesmo dom e aprenda com eles. Coloque suas habilidades à disposição da igreja. Se necessário, ajude outros cristãos a aprender tarefas práticas. Pratique o dom ajudando pessoas próximas.",
+    "color": "green"
+  },
+  {
+    "name": "Generosidade",
+    "definition": "Esse dom capacita cristãos a investirem seus bens materiais para o Reino de Deus com alegria e generosidade.",
+    "references": "",
+    "tasks": "",
+    "dangers": "",
+    "tips": "",
+    "color": "green"
+  },
+  {
+    "name": "Hospitalidade",
+    "definition": "Esse dom capacita cristãos a manterem sua casa aberta e receberem, de forma calorosa, pessoas que necessitam de hospedagem e alimentação.",
+    "references": "Gênesis 18.1-8; Mateus 10.11-14,40; Mateus 25.35; Lucas 10.38-42; Romanos 12.9-13; Tito 1.7-8; 1 Pedro 4.9-10; 3 João 5-10; Hebreus 13.1-2",
+    "tasks": "Liderar retiros, hospedar pessoas, receber visitantes na igreja, dar abrigo a necessitados, trabalho com jovens e marginalizados, intercâmbio de igrejas, ceder casa para reuniões.",
+    "dangers": "Alguns cristãos praticam o dom de forma tão intensa que sobrecarregam a si e a família. Outros, sem o dom, podem parecer insensíveis ou frios quando comparados.",
+    "tips": "Avise à liderança que você está disposto a receber visitantes. Avalie se grupos da igreja podem se reunir em sua casa. Você não precisa liderar o grupo, apenas ser anfitrião.",
+    "color": "green"
+  },
+  {
+    "name": "Conhecimento",
+    "definition": "Esse dom capacita cristãos a descobrirem, coletarem, analisarem e formularem informações e ideias que são importantes para o bem da igreja.",
+    "references": "Romanos 15.14; 1 Coríntios 8.1-2; 1 Coríntios 12.8; 1 Coríntios 13.2,8-10; 2 Coríntios 3.14-19; Efésios 3.14-19",
+    "tasks": "Escrita, trabalho teológico, estudos bíblicos, preparação de palestras, planejamento, pesquisa e ensino.",
+    "dangers": "Alguns se tornam teóricos e se afastam da prática. Outros podem usar o conhecimento para orgulho pessoal. Há risco de racionalizar demais a fé.",
+    "tips": "Invista tempo estudando a Bíblia e temas relevantes. Monte um arquivo de ideias úteis à igreja. Participe de seminários e grupos de estudo.",
+    "color": "green"
+  },
+  {
+    "name": "Misericórdia",
+    "definition": "Esse dom capacita cristãos a, por meio de ações práticas, demonstrarem empatia por aqueles com problemas físicos, emocionais ou psíquicos.",
+    "references": "Mateus 25.37-40; Romanos 12.4-8; Marcos 9.41; Tiago 1.27; Lucas 10.33-37; Tiago 2.14-17; Atos 9.36-42",
+    "tasks": "Visita a enfermos, trabalho com mães solteiras, dependentes químicos, grupos marginalizados e deficientes, serviço de diaconia.",
+    "dangers": "Sensibilidade extrema que leva à tristeza e exaustão. Reações isoladas e emocionais, sem constância. Dificuldade em ver a causa real do sofrimento.",
+    "tips": "Observe situações onde pessoas precisam de atos de misericórdia. Treine-se em ouvir com atenção e empatia. Trabalhe em cooperação com ministérios da igreja.",
+    "color": "green"
+  },
+  {
+    "name": "Música",
+    "definition": "Esse dom capacita cristãos a usarem um instrumento musical ou a voz para a glória de Deus e a edificação de outros.",
+    "references": "Deuteronômio 31.14-23; 1 Samuel 16.14-23; 1 Crônicas 16.41-42; 2 Crônicas 5.12-14; Salmos 150.1-6; 1 Coríntios 14.26; Efésios 5.18-20; Colossenses 3.15-17",
+    "tasks": "Cantar no coral, tocar instrumentos, liderar louvor, evangelismo musical, grupos de adoração.",
+    "dangers": "Buscar destaque ao invés de adoração. Confundir talento natural com dom espiritual. Orgulho e vaidade no serviço.",
+    "tips": "Use a música para edificar, não para impressionar. Sirva com humildade e constância. Participe de ensaios e treinamentos.",
+    "color": "green"
+  },
+  {
+    "name": "Organização",
+    "definition": "Esse dom capacita cristãos a entenderem os objetivos para áreas específicas do ministério e elaborarem planos eficientes para alcançá-los.",
+    "references": "Êxodo 18.13-27; 1 Coríntios 12.28",
+    "tasks": "Coordenação de ministérios, planejamento de eventos, administração de recursos, liderança de equipes, organização de retiros.",
+    "dangers": "Tornar-se excessivamente técnico, esquecendo o aspecto espiritual. Focar apenas na eficiência e esquecer as pessoas.",
+    "tips": "Trabalhe com cronogramas definidos. Participe de cursos de liderança e gestão. Peça feedback sobre sua forma de organizar.",
+    "color": "green"
+  },
+  {
+    "name": "Pobreza Voluntária",
+    "definition": "Esse dom capacita cristãos a renunciarem a bens materiais para adotar um estilo de vida adequado aos pobres de sua comunidade.",
+    "references": "Atos 2.44-45; Atos 4.32-37; 1 Coríntios 13.3; 2 Coríntios 6.10; Filipenses 4.11-13",
+    "tasks": "Missão transcultural, trabalho com marginalizados, refúgio para desabrigados, trabalho comunitário.",
+    "dangers": "Julgar negativamente os cristãos com padrão de vida mais alto. Tornar a pobreza um fim em si mesma. Dificuldade em discernir entre humildade e negligência.",
+    "tips": "Viva por um tempo entre pessoas mais simples. Estude o tema da simplicidade cristã. Seja exemplo de contentamento e generosidade.",
+    "color": "green"
+  },
+  {
+    "name": "Sabedoria",
+    "definition": "Esse dom capacita cristãos a ajudarem pessoas a aplicar conhecimentos existentes a situações específicas.",
+    "references": "1 Reis 3.5-28; 1 Coríntios 12.7-8; Tiago 3.13-18",
+    "tasks": "Aconselhamento, solução de conflitos, ensino, orientação espiritual.",
+    "dangers": "Tornar-se “guru espiritual” e ser seguido cegamente. Dar respostas prontas sem ouvir com atenção.",
+    "tips": "Estude casos reais e aprenda a aplicar princípios bíblicos. Desenvolva perguntas que levem as pessoas à reflexão.",
+    "color": "green"
+  },
+  {
+    "name": "Apóstolo",
+    "definition": "Esse dom capacita cristãos a serem reconhecidos como líderes espirituais por diversas igrejas.",
+    "references": "Mateus 10.2-15; Romanos 16.7; 1 João 13.12-17; 1 Coríntios 12.28-29; Atos 8.14-25; 2 Coríntios 12.12; Atos 14.14; Gálatas 1.1; Atos 15.1-6; Efésios 4.11",
+    "tasks": "Fundação de igrejas, Planejamento a longo prazo, Missão transcultural, Assessoria de igrejas, Tarefas além da igreja local.",
+    "dangers": "Alguns cristãos com esse dom não têm suficiente equilíbrio espiritual e possuem lacunas na educação. Por isso, é de suma importância que façam parte de uma comunidade na qual não exerçam nenhuma função de liderança. Algumas pessoas não têm simultaneamente o dom da liderança e a capacidade de organização. Isso pode fazer com que seus projetos não se realizem. O dom de apóstolo muitas vezes é reconhecido apenas por meio de “gurus”, o que não é saudável espiritualmente. As pessoas que estão sob luz dos refletores precisam se proteger das tentações em três áreas: dinheiro, sexo e poder.",
+    "tips": "Estude o que a Bíblia diz sobre líderes (1 Timóteo 3.1-7; 5.17-22). Faça contato com outros cristãos que também têm o dom de apóstolo. É conveniente que quem tem esse dom seja flexível em relação ao lugar onde morar.",
+    "color": "red"
+  },
+  {
+    "name": "Aconselhamento",
+    "definition": "Esse dom capacita cristãos a servirem outros por meio da consolação, exortação e encorajamento, de modo que eles experimentem ajuda e cura.",
+    "references": "João 4.1-42; Atos 14.21-22; Romanos 12.6-8; 2 Coríntios 1.3-7; 1 Tessalonicenses 2.11; 1 Tessalonicenses 5.14; 1 Timóteo 5.1",
+    "tasks": "Equipe de aconselhamento, acompanhamento de novos cristãos, trabalho com marginalizados, presídios, visita a doentes, grupos caseiros, aconselhamento familiar, aconselhamento telefônico, acompanhamento de doentes terminais, encorajamento.",
+    "dangers": "Alguns cristãos se sobrecarregam e sua própria vida e família sofrem. Às vezes, falta empatia e discernimento para lidar com a dor alheia.",
+    "tips": "Estude as mudanças das pessoas em contato com Deus. Estude o livro de Jó para aprender o que fazer (e o que evitar) com quem sofre. Mesmo quem aconselha precisa de aconselhamento regular. Participe de cursos que transmitam conceitos básicos de psicologia.",
+    "color": "red"
+  },
+  {
+    "name": "Evangelismo",
+    "definition": "Esse dom capacita cristãos a comunicarem o evangelho a não cristãos de tal forma que estes encontrem a fé e se tornem membros responsáveis da igreja.",
+    "references": "Atos 8.5-6; Atos 8.26-40; Efésios 4.11; Atos 14.13-21; Romanos 10.14-15",
+    "tasks": "Pregação, visitas com objetivo evangelístico, trabalho de rádio, fundação de igrejas, evangelização de crianças, cultos evangelísticos, aconselhamento, missão transcultural, trabalho com marginalizados, música/trabalho em conjunto, missão para imigrantes, grupos de estudo abertos para não cristãos, preletores em cultos evangelísticos.",
+    "dangers": "Alguns cristãos com esse dom agem como vendedores, exercendo pressão que não vem do Espírito. Muitos enfatizam apenas a decisão por Jesus, sem ajudar o novo convertido a se integrar à igreja local.",
+    "tips": "Una-se a um grupo que pratique evangelização. Trabalhe de acordo com um programa evangelístico. Observe cristãos com esse dom mais acentuado e aprenda com eles. Leve outras pessoas a praticarem a evangelização — isso fortalecerá o dom.",
+    "color": "red"
+  },
+  {
+    "name": "Ajuda",
+    "definition": "Esse dom capacita cristãos a colocarem suas próprias capacidades a serviço de outros cristãos, de modo que estes possam usar seus dons de modo mais eficaz.",
+    "references": "Êxodo 18.21-22; Números 11.16-17; Lucas 10.38-42; Romanos 16.1-2; 1 Coríntios 12.28",
+    "tasks": "Apoiar líderes, ajudar em mudanças, serviço de telefone, secretaria, portaria.",
+    "dangers": "Alguns sofrem de “síndrome da ajuda”, servindo de modo compulsivo. Outros, ao ajudar, assumem responsabilidades demais. Alguns exageram na dedicação, perdendo sua independência espiritual.",
+    "tips": "Descubra em que áreas da igreja sua ajuda é mais útil. Desenvolva suas habilidades práticas. Ajude sem gerar dependência.",
+    "color": "red"
+  },
+  {
+    "name": "Liderança",
+    "definition": "Esse dom capacita cristãos a estabelecerem objetivos para a igreja e comunicá-los aos outros de forma que trabalhem voluntariamente para alcançá-los.",
+    "references": "Êxodo 18.13-27; Romanos 12.8; 1 Tessalonicenses 5.12-13; 1 Timóteo 3.1-7; 1 Timóteo 5.17-22",
+    "tasks": "Pastor, supervisor de área, líder de culto, planejamento a longo prazo.",
+    "dangers": "O isolamento espiritual do líder. Dificuldade em manter humildade e dependência. Tentação de buscar poder, dinheiro ou prestígio.",
+    "tips": "Estude o que a Bíblia ensina sobre liderança. Observe personagens bíblicos como Abraão, José, Moisés, Davi, Elias e Paulo. Concentre-se em formar novos líderes.",
+    "color": "red"
+  },
+  {
+    "name": "Missionário",
+    "definition": "Esse dom capacita cristãos a usarem seus outros dons em um contexto cultural diferente.",
+    "references": "Atos 9.13-17; Atos 14.21-28; 1 Coríntios 9.19-23; Gálatas 1.15-17; Gálatas 2.7-14; Efésios 3.6-8",
+    "tasks": "Trabalho com marginalizados, missão transcultural, fundação de igrejas, missão com imigrantes.",
+    "dangers": "Alguns se adaptam tanto a outras culturas que perdem a identidade. Outros não se adaptam e fracassam. O dom missionário envolve toda a vida — quem o tem deve analisar bem os relacionamentos e compromissos antes de assumir.",
+    "tips": "Faça contatos com outras culturas. Aprenda novos idiomas. Participe de programas missionários. Analise se Deus está te chamando para ir ou apoiar quem vai.",
+    "color": "red"
+  },
+  {
+    "name": "Serviço",
+    "definition": "Esse dom capacita cristãos a reconhecerem onde algo deve ser feito e colocarem-se à disposição para o serviço.",
+    "references": "Lucas 10.38-42; Lucas 22.24-27; Atos 6.1-7; Romanos 12.6-7; 1 Timóteo 3.8-13",
+    "tasks": "Trabalho braçal, hospitalidade, cuidar do espaço da igreja, preparar refeições, digitar materiais, cuidar de crianças.",
+    "dangers": "Cristãos com esse dom podem tirar o trabalho de outros e torná-los dependentes. Outros se aproveitam da boa vontade de quem serve. Alguns condenam quem tem dificuldade em servir.",
+    "tips": "Sirva em áreas diversas. Ofereça-se para ajudar líderes. Tenha paciência caso não seja chamado imediatamente.",
+    "color": "red"
+  },
+  {
+    "name": "Pastoral",
+    "definition": "Esse dom capacita cristãos a assumirem, a longo prazo, responsabilidade pessoal pelo bem espiritual de um grupo de cristãos.",
+    "references": "João 10.1-15; Atos 20.28-31; Efésios 4.11; 1 Tessalonicenses 5.12-13; 1 Timóteo 4.11-16; 1 Pedro 5.1-5; Hebreus 13.7,17,20-21",
+    "tasks": "Liderança de grupos familiares, culto para jovens, aconselhamento, treinamento de novos convertidos.",
+    "dangers": "Dificuldade em liderar grupos grandes (150–200 membros). Falta de limites e esgotamento emocional.",
+    "tips": "Descubra os dons espirituais das pessoas e ajude-as a usá-los. Multiplique grupos pequenos. Faça cursos de aconselhamento.",
+    "color": "red"
+  },
+  {
+    "name": "Celibato",
+    "definition": "Esse dom capacita cristãos a viverem felizes sem um cônjuge, para servirem melhor ao Reino de Deus.",
+    "references": "Mateus 19.10-12; 1 Coríntios 7.7-8; 1 Coríntios 7.32-35; 1 Timóteo 4.1-5",
+    "tasks": "Qualquer área de serviço, especialmente fundação de igrejas e missão transcultural.",
+    "dangers": "Pressão social pode levar à rejeição do dom. Pessoas sem o dom podem ter dificuldades emocionais e sexuais.",
+    "tips": "Afirme a si mesmo: “Este é o meu dom espiritual”. Converse com outros cristãos que têm esse dom.",
+    "color": "red"
+  },
+  {
+    "name": "Ensino",
+    "definition": "Esse dom capacita cristãos a comunicarem verdades relevantes para a saúde da igreja, de tal maneira que outros aprendam.",
+    "references": "Atos 18.24-28; Romanos 12.6-7; 1 Coríntios 12.28-29; Efésios 4.11-14; Tiago 3.1",
+    "tasks": "Grupos familiares, Cursos, Seminários, Estudos bíblicos.",
+    "dangers": "Quem ensina será julgado com maior rigor (Tiago 3.1). Alguns transmitem conceitos, mas não os praticam.",
+    "tips": "Planeje tempo para estudo e preparo. Mantenha-se como eterno estudante. Use métodos didáticos e recursos visuais.",
+    "color": "red"
+  },
+  {
+    "name": "Libertação",
+    "definition": "Esse dom capacita cristãos a ajudarem pessoas que sofrem com opressões demoníacas a experimentarem libertação.",
+    "references": "Mateus 10.1; Lucas 10.17-20; Mateus 12.28-29,43-45; Atos 8.5-8; Marcos 5.1-20; Atos 16.16-18; Marcos 9.28-29; Marcos 16.17",
+    "tasks": "Ministério de libertação, Equipe de ministração, Eventos de evangelização, Trabalho com marginalizados, Aconselhamento, Missão transcultural.",
+    "dangers": "Às vezes, cristãos com o dom da expulsão de demônios tendem a ver opressões demoníacas mesmo em situações em que isso não é o caso, podendo prejudicar grandemente pessoas que nada têm a ver com isso. O envolvimento excessivo com o demoníaco se torna um perigo real para cristãos que estão regularmente envolvidos no ministério de libertação.",
+    "tips": "Exerça esse ministério junto com pessoas com bastante experiência nessa área. Depois pergunte o que acharam daquilo que você observou. Peça a Deus, para que Ele lhe dê o dom do discernimento de espíritos, pois você vai depender desse dom no ministério de libertação. Importante: conte com a proteção das orações regulares de uma equipe intercessora estática. Faça uso da proteção da “armadura de Deus” (Efésios 6.11-17).",
+    "color": "blue"
+  },
+  {
+    "name": "Discernimento",
+    "definition": "Esse dom capacita cristãos a discernirem se um determinado comportamento tem origem divina, humana ou demoníaca.",
+    "references": "Mateus 16.22-23; Atos 5.1-10; Atos 8.18-24; Atos 13.6-12; Atos 16.16-22; 1 Coríntios 12.10; 1 Tessalonicenses 5.19-22; 1 João 4.1-6",
+    "tasks": "Comunicação/trabalho de imprensa, Ministério de libertação, Conselho de igreja, Ministério da pregação, Planejamento a longo prazo, Aconselhamento, Trabalho com marginalizados, Eventos de evangelização, Ministério de bênção.",
+    "dangers": "Alguns cristãos aos quais Deus concedeu esse dom tendem a praticá-lo de forma dura e sem amor. Outros, porém, não o usam para edificação da igreja. Mesmo a pessoa que tem o dom de discernimento está sujeita a erro. É perigoso quando cristãos com esse dom se consideram infalíveis. Pessoas com esse dom tendem, às vezes, a um “espírito de crítica”, o que pode levá-las a ver defeito em tudo.",
+    "tips": "Um pré-requisito indispensável para a prática do dom é um profundo conhecimento da Bíblia. Esteja alerta para que a prática do dom seja acompanhada por amor e confirmada sempre. Esforce-se por exercer o seu dom com muita sensibilidade e amor. Sempre que praticar o dom, peça a Deus por essa sensibilidade.",
+    "color": "blue"
+  },
+  {
+    "name": "Fé",
+    "definition": "Esse dom capacita cristãos a discernirem a vontade de Deus para o desenvolvimento futuro do ministério com um grau incomum de confiança.",
+    "references": "Mateus 8.5-13; Mateus 17.20b; Mateus 21.18-22; Romanos 4.18-21; 1 Coríntios 12.9; Tiago 1.5-8",
+    "tasks": "Líder de grupos de oração, Planejamento a longo prazo, Equipe de igreja, Liderança de igreja, Missão transcultural, Conselho de igreja, Fundação de igrejas, Presidente de igreja, Evangelismo.",
+    "dangers": "Pessoas com o dom da fé podem projetar sua confiança de forma errada, desprezando limites ou críticas. Alguns não admitem quando seus objetivos ou “visões” não se concretizam. Cristãos com o dom da fé têm uma convicção especial de estarem em sintonia com a vontade de Deus, mas às vezes interpretam críticas como se fossem contra Deus — o que pode levar à obstinação.",
+    "tips": "Registre minuciosamente respostas de oração. Esforce-se conscientemente em lidar melhor com críticas. Procure comunhão com pessoas que, como você, também têm o dom da fé. Exercite sua fé em situações reais e sem exageros. Estude personagens bíblicos como Abraão, José, Moisés, Elias, Eliseu e Samuel.",
+    "color": "blue"
+  },
+  {
+    "name": "Cura",
+    "definition": "Esse dom capacita cristãos a servirem como instrumentos por meio dos quais Deus restaura a saúde de pessoas doentes sem o uso dos meios da medicina.",
+    "references": "Marcos 2.1-12; Marcos 8.22-26; Marcos 16.17-18; João 9.1-12; João 14.12-14; Atos 3.1-8; Atos 14.8-15; Atos 28.8-9; 1 Coríntios 12.9,28-30; Tiago 5.14-15",
+    "tasks": "Abençoar, Equipe de oração, Aconselhamento, Visita a doentes.",
+    "dangers": "Alguns defendem que a falta de cura é sinal de falta de fé, o que pode gerar desespero. Deve-se evitar o conflito entre cura milagrosa e medicina, pois ambas podem ser usadas por Deus.",
+    "tips": "Se não houver resposta imediata às orações, não desista. Ore pelos doentes sempre que possível e anote resultados. Observe experiências e aprenda com elas.",
+    "color": "blue"
+  },
+  {
+    "name": "Interpretação",
+    "definition": "Esse dom capacita cristãos a reproduzirem numa língua conhecida uma mensagem que alguém apresentou em línguas.",
+    "references": "1 Coríntios 12.10; 1 Coríntios 12.27-31; 1 Coríntios 14.1-5; 1 Coríntios 14.12-19; 1 Coríntios 14.26-28",
+    "tasks": "Círculo de oração, Batalha espiritual.",
+    "dangers": "O dom é usado no mesmo contexto da palavra profética, e pode ser confundido com revelação direta de Deus. Deve-se evitar uso em reuniões grandes sem confirmação.",
+    "tips": "Sempre que alguém falar em línguas em público, peça a Deus o dom de interpretação. Se não for praticado em sua igreja, procure reuniões apropriadas. Converse com cristãos experientes que já interpretaram.",
+    "color": "blue"
+  },
+  {
+    "name": "Milagres",
+    "definition": "Esse dom capacita cristãos a servirem como instrumentos por meio dos quais Deus realiza obras poderosas que rompem as leis da natureza.",
+    "references": "Êxodo 14.21-31; 1 Reis 18.21-40; Mateus 14.28-33; Mateus 24.23-24; Lucas 10.17-20; João 14.12-14; Atos 9.36-42; Atos 19.11-12; Atos 20.9-12; Romanos 15.18-19; 1 Coríntios 12.10,28; 2 Coríntios 12.12",
+    "tasks": "Missão transcultural, Batalha espiritual, Ministério de oração.",
+    "dangers": "Alguns usam o dom para autopromoção. Outros desacreditam do dom por ceticismo.",
+    "tips": "Relacione-se com cristãos de culturas diferentes. Registre testemunhos de milagres reais. Seja fiel e preciso nos relatos.",
+    "color": "blue"
+  },
+  {
+    "name": "Oração",
+    "definition": "Esse dom capacita cristãos a orarem por determinados assuntos durante longos períodos e, em maior medida que outros, receber respostas às suas orações.",
+    "references": "Daniel 6.11-12; Daniel 9.1-4; Lucas 11.1-13; Atos 16.19-34; Colossenses 4.12-13; 1 Timóteo 2.1-4; Tiago 5.16-18",
+    "tasks": "Grupos de oração, Batalha espiritual, Intercessão, Correntes de oração.",
+    "dangers": "Alguns, por orarem muito, acham-se mais espirituais. Outros podem se frustrar por não verem respostas rápidas.",
+    "tips": "Aceite pedidos concretos de oração. Tenha hora e local de oração. Mantenha registro de orações e respostas.",
+    "color": "blue"
+  },
+  {
+    "name": "Profecia",
+    "definition": "Esse dom capacita cristãos a receberem e comunicarem uma mensagem de Deus para o seu povo por meio do Espírito Santo.",
+    "references": "Deuteronômio 13.1-6; Deuteronômio 18.18-22; 1 Samuel 3.1-21; Mateus 7.15-20; Mateus 24.11,23-24; Atos 15.32; 1 Coríntios 12.28-29; 1 Coríntios 14.3,22,40; 2 Pedro 1.19-21; 1 João 4.1-6; Apocalipse 1.1-3",
+    "tasks": "Evangelização, Aconselhamento, Missão, Cultos, Grupos de oração.",
+    "dangers": "O profeta não está acima da crítica (1 Coríntios 14.29). Pode ser confundido com sabedoria ou conhecimento.",
+    "tips": "Escreva suas impressões para testá-las. Adquira conhecimento bíblico sólido. Esteja informado sobre seu tempo.",
+    "color": "blue"
+  },
+  {
+    "name": "Sofrimento",
+    "definition": "Esse dom capacita cristãos a sofrerem pela sua fé mantendo uma disposição alegre e vitoriosa.",
+    "references": "Mateus 5.10-12; Atos 7.54-60; Atos 8.1-4; Atos 20.22-24; Atos 21.4,14; 1 Coríntios 13.3; 2 Coríntios 1.8-11; Filipenses 1.12-14; 2 Coríntios 11.21b-33; 2 Coríntios 12.9-10; 1 Pedro 2.20-25; 1 Pedro 4.12-16",
+    "tasks": "Intercessão, Missão transcultural, Trabalho pioneiro.",
+    "dangers": "Alguns esperam que outros sofram também. Pode surgir o \"complexo de mártir\".",
+    "tips": "Seja consciente de que o sofrimento pode ensinar. Evite atitudes de autocomiseração. Busque forças em Deus nos tempos de dor.",
+    "color": "blue"
+  },
+  {
+    "name": "Línguas",
+    "definition": "Esse dom capacita cristãos a usarem uma língua que não aprenderam, tanto nas suas orações pessoais quanto publicamente.",
+    "references": "",
+    "tasks": "",
+    "dangers": "",
+    "tips": "",
+    "color": "blue"
+  }
+]

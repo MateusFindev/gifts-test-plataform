@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762523331418,
+      "tag": "0000_chemical_stryfe",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762523438014,
+      "tag": "0001_rare_invisible_woman",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762549090974,
+      "tag": "0002_dizzy_randall_flagg",
+      "breakpoints": true
+    }
+  ]
+}
