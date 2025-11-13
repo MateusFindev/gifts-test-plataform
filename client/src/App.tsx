@@ -15,6 +15,8 @@ import CheckResult from "./pages/CheckResult";
 import GiftsExplanation from "./pages/GiftsExplanation";
 import { APP_LOGO, APP_TITLE, ANALYTICS_ENDPOINT, ANALYTICS_WEBSITE_ID } from "./const";
 
+import { APP_LOGO, APP_TITLE, ANALYTICS_ENDPOINT, ANALYTICS_WEBSITE_ID } from "./const";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
