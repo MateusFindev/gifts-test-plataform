@@ -13,5 +13,4 @@ node_modules
 .DS_Store
 # misc
 *.log
-.env*
 !.env.example
