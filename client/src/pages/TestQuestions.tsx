@@ -27,7 +27,7 @@ export default function TestQuestions() {
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
   const savedPositionRef = useRef<number | null>(null);
 
-  const baseSectionIndexes = useMemo(
+const baseSectionIndexes = useMemo(
     () =>
       Array.from({ length: TOTAL_SECTIONS }, (_, sectionIndex) =>
         Array.from({ length: QUESTIONS_PER_SECTION }, (_, questionIndex) => sectionIndex * QUESTIONS_PER_SECTION + questionIndex)
