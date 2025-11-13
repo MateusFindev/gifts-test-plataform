@@ -61,6 +61,11 @@ MYSQL_PASSWORD=gifts_password
 VITE_APP_ID=gifts-test-platform
 VITE_APP_TITLE=Teste de Dons Espirituais
 
+# Local Admin Login (opcional)
+LOCAL_ADMIN_EMAIL=admin@example.com
+LOCAL_ADMIN_PASSWORD=troque-esta-senha
+LOCAL_ADMIN_NAME=Administrador
+
 # OAuth Configuration (opcional)
 OAUTH_SERVER_URL=https://api.manus.im
 VITE_OAUTH_PORTAL_URL=https://auth.manus.im
@@ -88,6 +93,13 @@ docker-compose exec app pnpm db:push
 ### Passo 5: Acessar a Aplicação
 
 Abra o navegador em: `http://localhost:3000`
+
+### Login administrativo local
+
+1. Configure `LOCAL_ADMIN_EMAIL` e `LOCAL_ADMIN_PASSWORD` no `.env`
+2. Reinicie o backend para carregar as variáveis
+3. Acesse `http://localhost:3000/admin/login`
+4. Informe o email e a senha configurados para acessar o dashboard
 
 ## 📧 Configuração de Email
 
