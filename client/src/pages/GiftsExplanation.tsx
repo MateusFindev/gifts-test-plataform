@@ -171,12 +171,12 @@ export default function GiftsExplanation() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 py-8 px-4">
       <Button
         variant="outline"
-        size="icon"
         onClick={() => setLocation("/")}
         aria-label="Voltar para a página inicial"
-        className="fixed bottom-6 right-6 z-50 rounded-full bg-white/90 shadow-lg hover:bg-white"
+        className="fixed top-4 left-4 z-50 flex items-center gap-2 rounded-full border-2 border-purple-200 bg-white/95 px-5 py-2 text-base font-semibold text-purple-800 shadow-xl transition hover:bg-white print:hidden"
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft className="h-6 w-6" />
+        Voltar
       </Button>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}

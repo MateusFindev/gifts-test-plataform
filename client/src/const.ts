@@ -15,7 +15,8 @@ export const APP_LOGO = hasText(rawAppLogo)
   : "/controlfin-logo.png";
 
 export const ANALYTICS_ENDPOINT = hasText(rawAnalyticsEndpoint)
-  ? rawAnalyticsEndpoint.trim().replace(/\/+$, "")
+  ? rawAnalyticsEndpoint.trim().replace(/\/+$/, "")
+
   : "";
 
 export const ANALYTICS_WEBSITE_ID = hasText(rawAnalyticsWebsiteId)
