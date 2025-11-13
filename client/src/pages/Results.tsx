@@ -14,6 +14,11 @@ interface ResultData {
 export default function Results() {
   const [, setLocation] = useLocation();
   const [resultData, setResultData] = useState<ResultData | null>(null);
+  const handleSaveAsPdf = () => {
+    if (typeof window !== "undefined") {
+      window.print();
+    }
+  };
 
   useEffect(() => {
     const storedData = sessionStorage.getItem("resultData");
@@ -35,8 +40,8 @@ export default function Results() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 print:bg-white print:py-4 print:px-0">
+      <div className="max-w-4xl mx-auto space-y-6 print:space-y-4 print:px-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Resultado do Teste de Dons</CardTitle>
@@ -141,16 +146,16 @@ export default function Results() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setLocation("/")} className="flex-1">
-            Voltar ao Início
+        <div className="flex flex-col gap-3 print:hidden md:flex-row">
+          <Button variant="outline" onClick={() => setLocation("/check-result")} className="flex-1">
+            Voltar para a Lista
           </Button>
           <Button
-            onClick={() => window.print()}
+            onClick={handleSaveAsPdf}
             variant="secondary"
             className="flex-1"
           >
-            Imprimir Resultado
+            Salvar em PDF
           </Button>
         </div>
       </div>
