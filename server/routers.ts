@@ -1,8 +1,11 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { z } from "zod";
 import {
   createGiftTest,
   getGiftTestById,
@@ -10,6 +13,7 @@ import {
   getAllGiftTestsByEmail,
   getGiftTestByExternalToken,
   updateGiftTest,
+  upsertUser,
 } from "./db";
 import { calculateGifts } from "./giftCalculation";
 import { sendResultEmail } from "./emailService";
@@ -19,6 +23,61 @@ export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
+    login: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(1),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const adminEmail = ENV.localAdminEmail?.trim();
+        const adminPassword = ENV.localAdminPassword;
+
+        if (!adminEmail || !adminPassword) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Autenticação local não configurada",
+          });
+        }
+
+        const normalizedInputEmail = input.email.trim().toLowerCase();
+        const normalizedAdminEmail = adminEmail.toLowerCase();
+        const isEmailValid = normalizedInputEmail === normalizedAdminEmail;
+        const isPasswordValid = input.password === adminPassword;
+
+        if (!isEmailValid || !isPasswordValid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Credenciais inválidas",
+          });
+        }
+
+        const openId = `local-admin:${normalizedAdminEmail}`;
+        const adminName = ENV.localAdminName?.trim() || adminEmail;
+
+        await upsertUser({
+          openId,
+          email: adminEmail,
+          name: adminName,
+          loginMethod: "local",
+          role: "SUPER_ADMIN",
+          lastSignedIn: new Date(),
+        });
+
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        const token = await sdk.createSessionToken(openId, {
+          name: adminName,
+          expiresInMs: ONE_YEAR_MS,
+        });
+
+        ctx.res.cookie(COOKIE_NAME, token, {
+          ...cookieOptions,
+          maxAge: ONE_YEAR_MS,
+        });
+
+        return { success: true } as const;
+      }),
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
