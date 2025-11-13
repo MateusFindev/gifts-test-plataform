@@ -1,5 +1,9 @@
 version: "3.9"
+
 services:
+  # ---------------------------
+  # Banco de dados MySQL
+  # ---------------------------
   db:
     image: mysql:8.0
     command: --default-authentication-plugin=mysql_native_password --explicit_defaults_for_timestamp=ON
@@ -10,35 +14,51 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-gifts_password}
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
-    volumes:
-      - mysql_data:/var/lib/mysql
 
-  app:
-    build: .
+  # ---------------------------
+  # Backend (API Node/Spring/etc)
+  # ---------------------------
+  server:
+    build:
+      context: .              # usa o diretório raiz do projeto
+      dockerfile: Dockerfile  # usa o Dockerfile da raiz
     depends_on:
       db:
         condition: service_healthy
     environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-mysql://gifts_user:gifts_password@db:3306/gifts_test}
-      JWT_SECRET: ${JWT_SECRET:-change-me}
-      GMAIL_USER: ${GMAIL_USER:-}
-      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
-      VITE_APP_ID: ${VITE_APP_ID:-gifts-test-platform}
-      VITE_APP_TITLE: ${VITE_APP_TITLE:-Teste de Dons Espirituais}
-      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL:-https://api.manus.im}
-      VITE_OAUTH_PORTAL_URL: ${VITE_OAUTH_PORTAL_URL:-https://auth.manus.im}
-      OWNER_OPEN_ID: ${OWNER_OPEN_ID:-}
-      OWNER_NAME: ${OWNER_NAME:-}
-      HOST: 0.0.0.0
-      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      GMAIL_USER: ${GMAIL_USER}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
+      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL}
+      OWNER_OPEN_ID: ${OWNER_OPEN_ID}
+      OWNER_NAME: ${OWNER_NAME}
     ports:
       - "3000:3000"
+
+  # ---------------------------
+  # Frontend (Vite / React / TS)
+  # ---------------------------
+  client:
+    build:
+      context: .          # usa a raiz do projeto
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_APP_ID=${VITE_APP_ID}
+      - VITE_APP_TITLE=${VITE_APP_TITLE}
+      - VITE_OAUTH_PORTAL_URL=${VITE_OAUTH_PORTAL_URL}
+
 
 volumes:
   mysql_data:

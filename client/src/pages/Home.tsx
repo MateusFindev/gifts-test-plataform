@@ -121,7 +121,7 @@ export default function Home() {
           <img 
             src="/controlfin-logo.png" 
             alt="Control Fin Solutions" 
-            className="h-20 opacity-80 hover:opacity-100 transition-opacity"
+            className="h-32 opacity-80 hover:opacity-100 transition-opacity"
           />
         </div>
       </footer>

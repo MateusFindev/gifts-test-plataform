@@ -186,3 +186,8 @@ Desenvolvido por **Control Fin Solutions**
 ## 🙏 Créditos
 
 Baseado no estudo "Desenvolvimento Natural da Igreja" de Christian A. Schwarz.
+
+docker compose down
+docker compose down -v --rmi all --remove-orphans
+docker compose build client --no-cache
+docker compose up -d 
