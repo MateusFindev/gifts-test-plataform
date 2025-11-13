@@ -1,10 +1,14 @@
-import { useEffect } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
+import { APP_LOGO, APP_TITLE } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { trpc } from "@/lib/trpc";
+import { TRPCClientError } from "@trpc/client";
 import { ShieldCheck, Users, Sparkles } from "lucide-react";
 
 const featureList = [
@@ -28,12 +32,45 @@ const featureList = [
 export default function AdminLogin() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
+  const utils = trpc.useUtils();
+  const loginMutation = trpc.auth.login.useMutation();
+  const [formState, setFormState] = useState({ email: "", password: "" });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const submitCredentials = async () => {
+    setErrorMessage(null);
+    if (!formState.email || !formState.password) {
+      setErrorMessage("Informe email e senha para continuar.");
+      return;
+    }
+    try {
+      await loginMutation.mutateAsync({
+        email: formState.email,
+        password: formState.password,
+      });
+      await utils.auth.me.invalidate();
+      setLocation("/admin/dashboard");
+    } catch (error: unknown) {
+      if (error instanceof TRPCClientError) {
+        setErrorMessage(error.message);
+        return;
+      }
+      setErrorMessage("Não foi possível realizar o login. Tente novamente.");
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await submitCredentials();
+  };
 
   useEffect(() => {
     if (!loading && user) {
       setLocation("/admin/dashboard");
     }
   }, [loading, setLocation, user]);
+
+  const isSubmitting = loginMutation.isPending;
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
@@ -57,15 +94,49 @@ export default function AdminLogin() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Button
-              size="lg"
-              className="w-full text-base"
-              onClick={() => {
-                window.location.href = getLoginUrl();
-              }}
-            >
-              Acessar área administrativa
-            </Button>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-email">Email</Label>
+                  <Input
+                    id="admin-email"
+                    type="email"
+                    placeholder="admin@exemplo.com"
+                    value={formState.email}
+                    autoComplete="username"
+                    onChange={event =>
+                      setFormState(prev => ({
+                        ...prev,
+                        email: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-password">Senha</Label>
+                  <Input
+                    id="admin-password"
+                    type="password"
+                    value={formState.password}
+                    autoComplete="current-password"
+                    onChange={event =>
+                      setFormState(prev => ({
+                        ...prev,
+                        password: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+              </div>
+              {errorMessage ? (
+                <p className="text-sm text-destructive">{errorMessage}</p>
+              ) : null}
+              <Button size="lg" className="w-full text-base" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Entrando..." : "Acessar área administrativa"}
+              </Button>
+            </form>
             <div className="grid gap-4 md:grid-cols-3">
               {featureList.map(feature => (
                 <div key={feature.title} className="flex flex-col gap-2">
@@ -123,11 +194,10 @@ export default function AdminLogin() {
               <Button
                 variant="secondary"
                 className="w-full bg-white text-slate-900 hover:bg-slate-100"
-                onClick={() => {
-                  window.location.href = getLoginUrl();
-                }}
+                onClick={submitCredentials}
+                disabled={isSubmitting}
               >
-                Entrar com minha conta
+                {isSubmitting ? "Entrando..." : "Entrar com minha conta"}
               </Button>
             </div>
           </CardContent>
