@@ -14,8 +14,11 @@ import Results from "./pages/Results";
 import CheckResult from "./pages/CheckResult";
 import GiftsExplanation from "./pages/GiftsExplanation";
 import { APP_LOGO, APP_TITLE, ANALYTICS_ENDPOINT, ANALYTICS_WEBSITE_ID } from "./const";
-
-import { APP_LOGO, APP_TITLE, ANALYTICS_ENDPOINT, ANALYTICS_WEBSITE_ID } from "./const";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminResults from "./pages/admin/AdminResults";
+import AdminResultDetails from "./pages/admin/AdminResultDetails";
+import AdminOrganizations from "./pages/admin/AdminOrganizations";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -29,6 +32,11 @@ function Router() {
       <Route path={"/external/:token"} component={ExternalAssessment} />
       <Route path={"/results"} component={Results} />
       <Route path={"/check-result"} component={CheckResult} />
+      <Route path={"/admin/login"} component={AdminLogin} />
+      <Route path={"/admin/dashboard"} component={AdminDashboard} />
+      <Route path={"/admin/results/:resultId"} component={AdminResultDetails} />
+      <Route path={"/admin/results"} component={AdminResults} />
+      <Route path={"/admin/organizations"} component={AdminOrganizations} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
