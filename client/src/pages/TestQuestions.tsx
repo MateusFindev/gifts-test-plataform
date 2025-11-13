@@ -27,7 +27,7 @@ export default function TestQuestions() {
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
   const savedPositionRef = useRef<number | null>(null);
 
-  const baseSectionIndexes = useMemo(
+const baseSectionIndexes = useMemo(
     () =>
       Array.from({ length: TOTAL_SECTIONS }, (_, sectionIndex) =>
         Array.from({ length: QUESTIONS_PER_SECTION }, (_, questionIndex) => sectionIndex * QUESTIONS_PER_SECTION + questionIndex)
@@ -43,6 +43,17 @@ export default function TestQuestions() {
   );
 
   const flattenedVisibleQuestions = useMemo(() => visibleQuestionIndexes.flat(), [visibleQuestionIndexes]);
+
+  const currentSectionQuestions = visibleQuestionIndexes[currentSection] ?? [];
+  const globalQuestionIndex = currentSectionQuestions[currentQuestion];
+  const questionText =
+    globalQuestionIndex !== undefined ? SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex] : "";
+  const scale = SECTION_SCALES[currentSection];
+  const currentAnswer = globalQuestionIndex !== undefined ? answers[globalQuestionIndex] : -1;
+
+  const totalVisibleQuestions = flattenedVisibleQuestions.length;
+  const totalProgress = flattenedVisibleQuestions.filter(index => answers[index] !== -1).length;
+  const totalProgressPercentage = totalVisibleQuestions > 0 ? (totalProgress / totalVisibleQuestions) * 100 : 0;
 
   // Carregar progresso do localStorage
   useEffect(() => {
@@ -89,21 +100,23 @@ export default function TestQuestions() {
 
   // Salvar progresso no localStorage sempre que as respostas mudarem
   useEffect(() => {
-    if (testId !== null) {
-      const storageKey = `${STORAGE_KEY_PREFIX}${testId}_answers`;
-      localStorage.setItem(storageKey, JSON.stringify(answers));
-      const fallbackGlobalIndex =
-        globalQuestionIndex ??
-        flattenedVisibleQuestions.find(index => answers[index] === -1) ??
-        flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1] ??
-        0;
-      const baseSectionForStorage = Math.floor(fallbackGlobalIndex / QUESTIONS_PER_SECTION);
-      const baseQuestionForStorage = fallbackGlobalIndex % QUESTIONS_PER_SECTION;
-
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_globalIndex`, fallbackGlobalIndex.toString());
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_section`, baseSectionForStorage.toString());
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_question`, baseQuestionForStorage.toString());
+    if (testId === null) {
+      return;
     }
+
+    const storageKey = `${STORAGE_KEY_PREFIX}${testId}_answers`;
+    localStorage.setItem(storageKey, JSON.stringify(answers));
+    const fallbackGlobalIndex =
+      globalQuestionIndex ??
+      flattenedVisibleQuestions.find(index => answers[index] === -1) ??
+      flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1] ??
+      0;
+    const baseSectionForStorage = Math.floor(fallbackGlobalIndex / QUESTIONS_PER_SECTION);
+    const baseQuestionForStorage = fallbackGlobalIndex % QUESTIONS_PER_SECTION;
+
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_globalIndex`, fallbackGlobalIndex.toString());
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_section`, baseSectionForStorage.toString());
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_question`, baseQuestionForStorage.toString());
   }, [
     answers,
     testId,
@@ -185,14 +198,15 @@ export default function TestQuestions() {
     onSuccess: (data) => {
       sessionStorage.setItem("externalToken1", data.token1);
       sessionStorage.setItem("externalToken2", data.token2);
-      
+
       // Limpar localStorage após finalizar
       if (testId !== null) {
         localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_answers`);
         localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_section`);
         localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_question`);
+        localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_globalIndex`);
       }
-      
+
       toast.success("Respostas salvas com sucesso!");
       setLocation("/test/external-links");
     },
@@ -200,16 +214,6 @@ export default function TestQuestions() {
       toast.error("Erro ao salvar respostas: " + error.message);
     },
   });
-
-  const currentSectionQuestions = visibleQuestionIndexes[currentSection] ?? [];
-  const globalQuestionIndex = currentSectionQuestions[currentQuestion];
-  const questionText = globalQuestionIndex !== undefined ? SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex] : "";
-  const scale = SECTION_SCALES[currentSection];
-  const currentAnswer = globalQuestionIndex !== undefined ? answers[globalQuestionIndex] : -1;
-
-  const totalVisibleQuestions = flattenedVisibleQuestions.length;
-  const totalProgress = flattenedVisibleQuestions.filter(index => answers[index] !== -1).length;
-  const totalProgressPercentage = totalVisibleQuestions > 0 ? (totalProgress / totalVisibleQuestions) * 100 : 0;
 
   const handleAnswerSelect = (value: number) => {
     if (globalQuestionIndex === undefined) {

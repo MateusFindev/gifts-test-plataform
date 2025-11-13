@@ -13,7 +13,8 @@ import ExternalAssessment from "./pages/ExternalAssessment";
 import Results from "./pages/Results";
 import CheckResult from "./pages/CheckResult";
 import GiftsExplanation from "./pages/GiftsExplanation";
-import { APP_TITLE } from "./const";
+
+import { APP_LOGO, APP_TITLE, ANALYTICS_ENDPOINT, ANALYTICS_WEBSITE_ID } from "./const";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -33,6 +34,60 @@ function Router() {
   );
 }
 
+const configureBrandingAssets = () => {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.title = APP_TITLE;
+
+  const updateLinkHref = (id: string) => {
+    const element = document.getElementById(id);
+    if (element instanceof HTMLLinkElement) {
+      element.href = APP_LOGO;
+      return;
+    }
+
+    if (APP_LOGO) {
+      const fallbackLink = document.createElement("link");
+      fallbackLink.id = id;
+      fallbackLink.href = APP_LOGO;
+      if (id === "app-apple-icon") {
+        fallbackLink.rel = "apple-touch-icon";
+      } else {
+        fallbackLink.rel = "icon";
+        fallbackLink.type = "image/png";
+      }
+      document.head.appendChild(fallbackLink);
+    }
+  };
+
+  updateLinkHref("app-favicon");
+  updateLinkHref("app-apple-icon");
+};
+
+const configureAnalytics = () => {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return;
+  }
+
+  const existing = document.querySelector<HTMLScriptElement>("script[data-analytics-loader='umami']");
+  if (existing) {
+    existing.remove();
+  }
+
+  if (!ANALYTICS_ENDPOINT || !ANALYTICS_WEBSITE_ID) {
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.defer = true;
+  script.src = `${ANALYTICS_ENDPOINT}/umami`;
+  script.dataset.websiteId = ANALYTICS_WEBSITE_ID;
+  script.dataset.analyticsLoader = "umami";
+  document.body.appendChild(script);
+};
+
 // NOTE: About Theme
 // - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
 //   to keep consistent foreground/background color across components
@@ -40,9 +95,8 @@ function Router() {
 
 function App() {
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.title = APP_TITLE;
-    }
+    configureBrandingAssets();
+    configureAnalytics();
   }, []);
 
   return (

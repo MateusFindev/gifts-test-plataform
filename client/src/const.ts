@@ -1,12 +1,26 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 const rawAppTitle = import.meta.env.VITE_APP_TITLE;
+const rawAppLogo = import.meta.env.VITE_APP_LOGO;
+const rawAnalyticsEndpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
+const rawAnalyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
 
-export const APP_TITLE = rawAppTitle && rawAppTitle.trim().length > 0 ? rawAppTitle.trim() : "App";
+const hasText = (value: string | undefined | null): value is string =>
+  typeof value === "string" && value.trim().length > 0;
 
-export const APP_LOGO =
-  import.meta.env.VITE_APP_LOGO ||
-  "https://placehold.co/128x128/E1E7EF/1F2937?text=App";
+export const APP_TITLE = hasText(rawAppTitle) ? rawAppTitle.trim() : "App";
+
+export const APP_LOGO = hasText(rawAppLogo)
+  ? rawAppLogo.trim()
+  : "/controlfin-logo.png";
+
+export const ANALYTICS_ENDPOINT = hasText(rawAnalyticsEndpoint)
+  ? rawAnalyticsEndpoint.trim().replace(/\/+$, "")
+  : "";
+
+export const ANALYTICS_WEBSITE_ID = hasText(rawAnalyticsWebsiteId)
+  ? rawAnalyticsWebsiteId.trim()
+  : "";
 
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {
