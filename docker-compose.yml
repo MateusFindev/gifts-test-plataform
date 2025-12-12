@@ -33,14 +33,16 @@ services:
       db:
         condition: service_healthy
     environment:
-      # Se você não setar DATABASE_URL no .env, usa esse default apontando pro serviço "db"
-      DATABASE_URL: ${DATABASE_URL:-mysql://${MYSQL_USER:-gifts_user}:${MYSQL_PASSWORD:-gifts_password}@db:3306/${MYSQL_DATABASE:-gifts_test}}
-      JWT_SECRET: ${JWT_SECRET:-change_me}
-      GMAIL_USER: ${GMAIL_USER:-}
-      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
-      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL:-}
-      OWNER_OPEN_ID: ${OWNER_OPEN_ID:-}
-      OWNER_NAME: ${OWNER_NAME:-}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      GMAIL_USER: ${GMAIL_USER}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
+      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL}
+      OWNER_OPEN_ID: ${OWNER_OPEN_ID}
+      OWNER_NAME: ${OWNER_NAME}
+      LOCAL_ADMIN_EMAIL: ${LOCAL_ADMIN_EMAIL}
+      LOCAL_ADMIN_PASSWORD: ${LOCAL_ADMIN_PASSWORD}
+      LOCAL_ADMIN_NAME: ${LOCAL_ADMIN_NAME}
     ports:
       # Em vez de 3000:3000 (CONFLITA), expõe só em localhost numa porta alternativa
       - "127.0.0.1:4010:3000"
