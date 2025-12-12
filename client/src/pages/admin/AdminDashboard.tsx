@@ -1,12 +1,29 @@
 import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   ChartContainer,
   ChartLegend,
@@ -14,101 +31,225 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-  mockActivityFeed,
-  mockEngagementTrend,
-  mockGiftDistribution,
-  mockHighlights,
-  mockNextSteps,
-  mockOrganizations,
-  mockPlanLimits,
-  mockResults,
-} from "./mock-data";
+import { mockActivityFeed } from "./mock-data";
 import {
   ArrowUpRight,
-  CalendarClock,
   Download,
   Filter,
-  Layers3,
+  Users,
+  CheckCircle,
+  Clock,
+  Pencil,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
 
 const formatDate = (date: string | undefined) => {
   if (!date) return "--";
   return format(new Date(date), "dd MMM yyyy", { locale: ptBR });
 };
 
+const statusMap: Record<
+  string,
+  {
+    text: string;
+    icon: React.ElementType;
+    variant: "default" | "secondary" | "outline";
+  }
+> = {
+  completed: { text: "Finalizado", icon: CheckCircle, variant: "default" },
+  awaiting_external: {
+    text: "Aguardando Respostas",
+    icon: Clock,
+    variant: "secondary",
+  },
+  in_progress: { text: "Em Andamento", icon: Pencil, variant: "outline" },
+};
+
+const chartConfig = {
+  manifest: { label: "Dons Manifestos", color: "#2563eb" }, // azul
+  latent: { label: "Dons Latentes", color: "#22c55e" }, // verde
+} as const;
+
+const engagementChartConfig = {
+  completed: { label: "Testes Finalizados", color: "hsl(var(--chart-1))" },
+  started: { label: "Testes Iniciados", color: "hsl(var(--chart-3))" },
+} as const;
+
 export default function AdminDashboard() {
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("all");
 
+  const selectedOrgIdNumber =
+    selectedOrganizationId === "all" ? null : Number(selectedOrganizationId);
+
+  // 3 queries: organizações, overview e resultados
+  const orgQuery = trpc.adminOrganization.list.useQuery();
+  const dashboardQuery = trpc.adminDashboard.overview.useQuery(
+    selectedOrganizationId === "all"
+      ? {}
+      : { organizationId: Number(selectedOrganizationId) },
+  );
+  const resultsQuery = trpc.adminResult.list.useQuery();
+
+  const organizationsRaw = orgQuery.data ?? [];
+
+  const isLoading =
+    orgQuery.isLoading || dashboardQuery.isLoading || resultsQuery.isLoading;
+
+  const isError =
+    dashboardQuery.isError || resultsQuery.isError || !dashboardQuery.data;
+
+  const error = dashboardQuery.error ?? resultsQuery.error;
+  const data = dashboardQuery.data;
+  const resultsData = resultsQuery.data;
+
   const organizations = useMemo(
-    () => mockOrganizations.filter(org => org.id !== "all"),
-    []
+    () => organizationsRaw,
+    [organizationsRaw],
   );
 
+  // Organização selecionada (ou null para visão geral)
   const selectedOrganization = useMemo(() => {
-    if (selectedOrganizationId === "all") {
-      return mockOrganizations.find(org => org.id === "all");
-    }
-    return organizations.find(org => org.id === selectedOrganizationId);
+    if (selectedOrganizationId === "all") return null;
+    return (
+      organizations.find(
+        (org) => String(org.id) === selectedOrganizationId,
+      ) ?? null
+    );
   }, [organizations, selectedOrganizationId]);
 
-  const filteredResults = useMemo(() => {
-    if (selectedOrganizationId === "all") {
-      return mockResults;
-    }
-    return mockResults.filter(result => result.organizationId === selectedOrganizationId);
-  }, [selectedOrganizationId]);
+  // === Métricas baseadas em resultados filtrados por organização ===
 
-  const respondentCount = selectedOrganization?.respondentCount ?? 0;
-  const completionRate = selectedOrganization?.completionRate ?? 0;
-  const activeLinks = selectedOrganization?.activeLinks ?? 0;
+  const resultsList = resultsData ?? [];
 
-  const awaitingExternal = filteredResults.filter(result => result.status === "awaiting_external").length;
+  // Resultados considerados para métricas (por org ou todos)
+  const filteredResultsForMetrics = useMemo(() => {
+    if (selectedOrgIdNumber === null) return resultsList;
+    return resultsList.filter(
+      (r) => r.organizationId === selectedOrgIdNumber,
+    );
+  }, [resultsList, selectedOrgIdNumber]);
 
-  const chartConfig = {
-    manifest: {
-      label: "Manifestos",
-      color: "hsl(var(--chart-1))",
-    },
-    latent: {
-      label: "Latentes",
-      color: "hsl(var(--chart-2))",
-    },
-  } as const;
+  // Quantidade de testes
+  const testsCount = filteredResultsForMetrics.length;
 
-  const engagementChartConfig = {
-    completed: {
-      label: "Finalizados",
-      color: "hsl(var(--chart-1))",
-    },
-    started: {
-      label: "Iniciados",
-      color: "hsl(var(--chart-3))",
-    },
-  } as const;
+  // Pessoas únicas (por email)
+  const distinctRespondentsCount = useMemo(() => {
+    const set = new Set(
+      filteredResultsForMetrics
+        .map((r) => r.email?.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    return set.size;
+  }, [filteredResultsForMetrics]);
+
+  // Quantidade por status
+  const completedCount = filteredResultsForMetrics.filter(
+    (r) => r.status === "completed",
+  ).length;
+
+  const inProgressCount = filteredResultsForMetrics.filter(
+    (r) => r.status === "in_progress",
+  ).length;
+
+  const awaitingExternalCount = filteredResultsForMetrics.filter(
+    (r) => r.status === "awaiting_external",
+  ).length;
+
+  // Taxa de conclusão (pra usar se quiser percentual)
+  const completionRate =
+    testsCount === 0 ? 0 : completedCount / testsCount;
+
+  // (Opcional) dados para gráfico de status – se quiser usar depois
+  // const statusChartData = [
+  //   { status: "Concluídos", value: completedCount },
+  //   { status: "Em andamento", value: inProgressCount },
+  //   { status: "Aguardando externos", value: awaitingExternalCount },
+  // ];
+
+  // Últimas pessoas avaliadas (tabela) – ainda usa os recentResults do overview
+  const filteredRecentResults = useMemo(() => {
+    const recents = data?.recentResults ?? [];
+    if (selectedOrganizationId === "all") return recents;
+
+    const orgName =
+      organizations.find(
+        (org) => String(org.id) === selectedOrganizationId,
+      )?.name ?? null;
+
+    if (!orgName) return recents;
+
+    return recents.filter((r) => r.organizationName === orgName);
+  }, [data, organizations, selectedOrganizationId]);
+
+  // === Só aqui fazemos os early returns (depois de TODAS as hooks e memos) ===
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Carregando dados do painel...
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isError || !data || !resultsData) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <p className="text-sm text-destructive">
+            {error?.message ?? "Erro ao carregar dados do dashboard."}
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Dados para o gráfico de dons
+  const giftBarData = data.giftDistribution ?? [];
+  const giftChartWidth = Math.max(giftBarData.length * 80, 640);
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Cabeçalho + filtros */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Visão geral SaaS</p>
-            <h1 className="text-3xl font-semibold tracking-tight">Dashboard administrativo</h1>
+            <p className="text-sm text-muted-foreground">
+              Visão Geral da Organização
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Painel de Controle
+            </h1>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Select value={selectedOrganizationId} onValueChange={setSelectedOrganizationId}>
+            <Select
+              value={selectedOrganizationId}
+              onValueChange={setSelectedOrganizationId}
+            >
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Todas" />
+                <SelectValue placeholder="Todas as Organizações" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as organizações</SelectItem>
-                {organizations.map(org => (
-                  <SelectItem key={org.id} value={org.id}>
+                <SelectItem value="all">Todas as Organizações</SelectItem>
+                {organizations.map((org) => (
+                  <SelectItem key={org.id} value={String(org.id)}>
                     {org.name}
                   </SelectItem>
                 ))}
@@ -124,104 +265,179 @@ export default function AdminDashboard() {
             </Button>
             <Button className="gap-2">
               <Sparkles className="h-4 w-4" />
-              Nova organização
+              Nova Organização
             </Button>
           </div>
         </div>
 
+        {/* Cards principais */}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {/* Testes Avaliados */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Respondentes ativos</CardTitle>
-              <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Testes Avaliados
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{respondentCount}</div>
-              <p className="text-xs text-muted-foreground">Total vinculado à seleção atual</p>
+              <div className="text-3xl font-bold">{testsCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Total de testes realizados nesta visão
+              </p>
             </CardContent>
           </Card>
+
+          {/* Pessoas Avaliadas */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Taxa de conclusão</CardTitle>
-              <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Pessoas Avaliadas
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{(completionRate * 100).toFixed(0)}%</div>
-              <p className="text-xs text-muted-foreground">Inclui respostas internas e externas</p>
+              <div className="text-3xl font-bold">
+                {distinctRespondentsCount}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pessoas únicas que já responderam ao teste
+              </p>
             </CardContent>
           </Card>
+
+          {/* Testes Finalizados */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Links ativos</CardTitle>
-              <Layers3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Testes Finalizados
+              </CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{activeLinks}</div>
-              <p className="text-xs text-muted-foreground">Autoavaliação + avaliações externas</p>
+              <div className="text-3xl font-bold">{completedCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Testes concluídos 100% nesta visão
+              </p>
             </CardContent>
           </Card>
+
+          {/* Aguardando Respostas Externas */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aguardando externos</CardTitle>
-              <CalendarClock className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Aguardando Avaliações Externas
+              </CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{awaitingExternal}</div>
-              <p className="text-xs text-muted-foreground">Resultados que precisam de validação</p>
+              <div className="text-3xl font-bold">{awaitingExternalCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Testes que ainda não receberam as avaliações externas necessárias
+              </p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Gráficos */}
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="col-span-1">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Distribuição de dons</CardTitle>
-                <CardDescription>Últimos 90 dias por tipo de dom</CardDescription>
-              </div>
-              <Badge variant="outline">Atualizado hoje</Badge>
+            <CardHeader>
+              <CardTitle>Os Dons Mais Comuns na Sua Organização</CardTitle>
+              <CardDescription>
+                Dons que as pessoas já usam (manifestos) e oportunidades de
+                crescimento (latentes).
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[320px]">
-                <BarChart data={mockGiftDistribution}>
-                  <CartesianGrid vertical={false} strokeDasharray="4 4" />
-                  <XAxis dataKey="gift" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="manifest" fill="var(--color-manifest)" radius={6} />
-                  <Bar dataKey="latent" fill="var(--color-latent)" radius={6} />
-                </BarChart>
-              </ChartContainer>
+              {/* Wrapper do scroll horizontal */}
+              <div className="w-full overflow-x-auto">
+                <div style={{ width: giftChartWidth }}>
+                  <ChartContainer config={chartConfig} className="h-[360px] w-full">
+                    <BarChart
+                      data={giftBarData}
+                      barCategoryGap={48}
+                      barGap={12}
+                    >
+                      <CartesianGrid vertical={false} strokeDasharray="4 4" />
+                      <XAxis
+                        dataKey="gift"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        interval={0}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Bar
+                        dataKey="manifest"
+                        name="Dons Manifestos"
+                        fill="#2563eb"
+                        radius={6}
+                        barSize={16}
+                      />
+                      <Bar
+                        dataKey="latent"
+                        name="Dons Latentes"
+                        fill="#22c55e"
+                        radius={6}
+                        barSize={16}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+              </div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Engajamento mensal</CardTitle>
-                <CardDescription>Comparativo de testes iniciados x concluídos</CardDescription>
-              </div>
+            <CardHeader>
+              <CardTitle>Como as Pessoas Estão Usando o Teste</CardTitle>
+              <CardDescription>
+                Acompanhe quantos testes foram iniciados e finalizados a cada
+                mês.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={engagementChartConfig} className="h-[320px]">
-                <LineChart data={mockEngagementTrend}>
+              <ChartContainer
+                config={engagementChartConfig}
+                className="h-[320px]"
+              >
+                <LineChart data={data.engagementTrend ?? []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <Line type="monotone" dataKey="started" stroke="var(--color-started)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="completed" stroke="var(--color-completed)" strokeWidth={2} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="started"
+                    stroke="#2563eb"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="completed"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                 </LineChart>
               </ChartContainer>
             </CardContent>
           </Card>
         </div>
 
+        {/* Últimas pessoas avaliadas + feed de atividades */}
         <div className="grid gap-4 xl:grid-cols-3">
           <Card className="xl:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Resultados recentes</CardTitle>
+              <CardTitle>Últimas Pessoas Avaliadas</CardTitle>
               <Button variant="ghost" size="sm" className="gap-2" asChild>
                 <Link href="/admin/results">
                   <ArrowUpRight className="h-4 w-4" />
@@ -236,107 +452,72 @@ export default function AdminDashboard() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Organização</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Score</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredResults.slice(0, 5).map(result => (
-                    <TableRow key={result.id}>
-                      <TableCell className="font-medium">{result.personName}</TableCell>
-                      <TableCell>{result.organizationName}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={result.status === "completed" ? "default" : result.status === "awaiting_external" ? "secondary" : "outline"}
-                        >
-                          {result.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{result.score}</TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredRecentResults.slice(0, 5).map((result) => {
+                    const statusInfo =
+                      statusMap[result.status] || statusMap.in_progress;
+                    return (
+                      <TableRow key={result.id}>
+                        <TableCell className="font-medium">
+                          {result.name}
+                        </TableCell>
+                        <TableCell>
+                          {result.organizationName ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={statusInfo.variant}
+                            className="gap-1.5 pl-2"
+                          >
+                            <statusInfo.icon className="h-3.5 w-3.5" />
+                            {statusInfo.text}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/admin/results/${result.id}`}>
+                              Ver Resultado
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Próximas ações</CardTitle>
-              <CardDescription>Organize o onboarding da sua organização</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {mockNextSteps.map(step => (
-                <div key={step.id} className="rounded-lg border p-4">
-                  <p className="font-medium">{step.title}</p>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
-                  <Button variant="link" className="px-0 mt-1">
-                    {step.linkLabel}
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Uso do plano</CardTitle>
-              <CardDescription>Controle da assinatura atual</CardDescription>
+              <CardTitle>O que Aconteceu Recentemente</CardTitle>
+              <CardDescription>
+                Um resumo das últimas atividades na sua organização.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span>Respondentes</span>
-                <span>
-                  {mockPlanLimits.totalRespondents} / {mockPlanLimits.planLimit}
-                </span>
-              </div>
-              <Progress value={(mockPlanLimits.totalRespondents / mockPlanLimits.planLimit) * 100} />
-              <Separator />
-              <div className="flex items-center justify-between text-sm">
-                <span>Organizações</span>
-                <span>
-                  {mockPlanLimits.organizations} / {mockPlanLimits.maxOrganizations}
-                </span>
-              </div>
+              {data.activityFeed && data.activityFeed.length > 0 ? (
+                data.activityFeed.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex flex-col gap-1 border-l-2 border-primary/50 pl-3"
+                  >
+                    <p className="text-sm font-medium">{activity.message}</p>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(activity.timestamp)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma atividade recente para os filtros selecionados.
+                </p>
+              )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Atividade recente</CardTitle>
-              <CardDescription>Notificações centralizadas</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {mockActivityFeed.map(activity => (
-                <div key={activity.id} className="flex flex-col gap-1 border-l-2 border-primary/50 pl-3">
-                  <p className="text-sm font-medium">{activity.message}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(activity.timestamp)}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {mockHighlights.map(item => (
-            <Card key={item.id}>
-              <CardHeader>
-                <CardTitle>{item.name}</CardTitle>
-                <CardDescription>Top dom: {item.topGift}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-3xl font-semibold">{item.respondents}</p>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  Crescimento nos últimos 30 dias
-                  <Badge variant="secondary" className="gap-1">
-                    <ArrowUpRight className="h-3 w-3" />
-                    {(item.growth * 100).toFixed(0)}%
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       </div>
     </DashboardLayout>

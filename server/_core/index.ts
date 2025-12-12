@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
+import { logger, requestLogger } from "./logger";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -30,6 +31,8 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  // Simple request logging middleware
+  app.use(requestLogger);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -54,12 +57,14 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.warn("Port in use, using alternative port", { preferredPort, port });
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    logger.info("Server started", { port });
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  logger.error("Failed to start server", { error: err instanceof Error ? err.message : String(err) });
+});

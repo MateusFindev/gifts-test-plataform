@@ -9,7 +9,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
-      <div className="max-w-4xl w-full space-y-8">
+      <div className="absolute top-4 left-4">
+          <Button variant="outline" onClick={() => setLocation("/admin/login")}>Painel Administrativo</Button>
+        </div>
+        <div className="max-w-4xl w-full space-y-8">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
             {APP_TITLE}
@@ -121,7 +124,7 @@ export default function Home() {
           <img 
             src="/controlfin-logo.png" 
             alt="Control Fin Solutions" 
-            className="h-32 opacity-80 hover:opacity-100 transition-opacity"
+            className="h-8 opacity-80 hover:opacity-100 transition-opacity"
           />
         </div>
       </footer>

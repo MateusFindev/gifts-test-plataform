@@ -1,3 +1,4 @@
+import { logger } from "./_core/logger";
 import nodemailer from "nodemailer";
 
 interface EmailResult {
@@ -11,17 +12,17 @@ export async function sendResultEmail(
   recipientEmail: string,
   result: EmailResult
 ): Promise<boolean> {
-  console.log("[Email] Iniciando envio de email para:", recipientEmail);
+  logger.info("Email: iniciando envio", { recipientEmail });
   
   try {
     // Verificar se as credenciais do Gmail estão configuradas
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      console.warn("[Email] Credenciais do Gmail não configuradas. Email não será enviado.");
-      console.warn("[Email] Configure GMAIL_USER e GMAIL_APP_PASSWORD no painel de Secrets.");
+      logger.warn("Credenciais do Gmail não configuradas. Email não será enviado.");
+      logger.warn("Configure GMAIL_USER e GMAIL_APP_PASSWORD no painel de Secrets.");
       return false;
     }
     
-    console.log("[Email] Credenciais encontradas. Configurando transporter...");
+    logger.debug("Email: credenciais encontradas, configurando transporter");
 
     // Configurar transporter do Nodemailer com Gmail SMTP
     const transporter = nodemailer.createTransport({
@@ -32,7 +33,7 @@ export async function sendResultEmail(
       },
     });
     
-    console.log("[Email] Transporter configurado. Preparando conteúdo...");
+    logger.debug("Email: transporter configurado, preparando conteúdo");
 
     // Formatar lista de dons
     const formatGiftList = (gifts: string[]) => {
@@ -74,20 +75,16 @@ Plataforma de Testes de Dons
       text: emailBody,
     });
 
-    console.log(`[Email] Email enviado com sucesso! MessageId: ${info.messageId}`);
-    console.log(`[Email] Destinatário: ${recipientEmail}`);
+    logger.info("Email enviado com sucesso", { messageId: info.messageId, recipientEmail });
     return true;
   } catch (error: any) {
-    console.error("[Email] ERRO ao enviar email:");
-    console.error("[Email] Tipo de erro:", error.name);
-    console.error("[Email] Mensagem:", error.message);
-    console.error("[Email] Stack:", error.stack);
-    if (error.code) {
-      console.error("[Email] Código de erro:", error.code);
-    }
-    if (error.response) {
-      console.error("[Email] Resposta do servidor:", error.response);
-    }
+    logger.error("Erro ao enviar email", {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      code: (error as any)?.code,
+      response: (error as any)?.response,
+    });
     return false;
   }
 }

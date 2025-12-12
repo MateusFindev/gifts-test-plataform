@@ -19,6 +19,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminResults from "./pages/admin/AdminResults";
 import AdminResultDetails from "./pages/admin/AdminResultDetails";
 import AdminOrganizations from "./pages/admin/AdminOrganizations";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAnalyses from "./pages/admin/AdminAnalyses";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -36,7 +38,9 @@ function Router() {
       <Route path={"/admin/dashboard"} component={AdminDashboard} />
       <Route path={"/admin/results/:resultId"} component={AdminResultDetails} />
       <Route path={"/admin/results"} component={AdminResults} />
+      <Route path={"/admin/analyses"} component={AdminAnalyses} />
       <Route path={"/admin/organizations"} component={AdminOrganizations} />
+      <Route path={"/admin/users"} component={AdminUsers} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

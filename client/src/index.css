@@ -175,3 +175,63 @@
     }
   }
 }
+
+/* Tema exclusivo para o painel administrativo */
+.admin-theme {
+  /* Paleta principal (espiritual / profissional) */
+  --primary: var(--color-indigo-700);
+  --primary-foreground: var(--color-slate-50);
+
+  /* Nova paleta secundária – Sky Blue (limpa e moderna) */
+  --secondary: var(--color-sky-400);
+  --secondary-foreground: oklch(0.22 0.02 260);
+
+  /* Paleta terciária (ações positivas / progresso) */
+  --accent: var(--color-teal-500);
+  --accent-foreground: oklch(0.98 0 0);
+
+  /* Backgrounds e superfícies do admin */
+  --background: oklch(0.985 0.015 280);
+  --foreground: oklch(0.24 0.02 260);
+  --card: oklch(0.97 0.015 280);
+  --card-foreground: oklch(0.22 0.02 260);
+  --popover: oklch(0.97 0.015 280);
+  --popover-foreground: oklch(0.24 0.02 260);
+
+  /* Tons neutros */
+  --muted: oklch(0.94 0.01 280);
+  --muted-foreground: oklch(0.48 0.02 260);
+
+  /* Estado destrutivo */
+  --destructive: oklch(0.6 0.23 27);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  /* Bordas / inputs / foco */
+  --border: oklch(0.9 0.01 280);
+  --input: oklch(0.9 0.01 280);
+  --ring: oklch(0.58 0.18 270);
+
+  /* Sidebar do painel admin */
+  --sidebar: oklch(0.97 0.015 280);
+  --sidebar-foreground: oklch(0.24 0.02 260);
+  --sidebar-primary: var(--color-indigo-600);
+  --sidebar-primary-foreground: var(--color-slate-50);
+  --sidebar-accent: var(--color-sky-300);
+  --sidebar-accent-foreground: oklch(0.24 0.02 260);
+  --sidebar-border: oklch(0.9 0.01 280);
+  --sidebar-ring: oklch(0.58 0.18 270);
+
+  /* Gráficos do dashboard admin — harmonizados */
+  --chart-1: var(--color-indigo-500);   /* manifest */
+  --chart-2: var(--color-sky-400);      /* latent */
+  --chart-3: var(--color-teal-500);     /* started */
+  --chart-4: var(--color-indigo-700);
+  --chart-5: var(--color-slate-500);
+
+  /* Mapeamento usado pelos componentes */
+  --color-manifest: hsl(var(--chart-1));
+  --color-latent: hsl(var(--chart-2));
+  --color-started: hsl(var(--chart-3));
+  --color-completed: hsl(var(--chart-1));
+}
+

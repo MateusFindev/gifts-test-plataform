@@ -29,6 +29,20 @@
       "when": 1763046301268,
       "tag": "0003_youthful_phalanx",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1764869388665,
+      "tag": "0004_famous_nitro",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1764945388643,
+      "tag": "0005_loving_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

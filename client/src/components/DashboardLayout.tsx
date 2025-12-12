@@ -21,7 +21,15 @@ import {
 } from "@/components/ui/sidebar";
 import { ADMIN_LOGIN_PATH, APP_LOGO, APP_TITLE } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BarChart3, Building2, LayoutDashboard, LogOut, PanelLeft } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  LayoutDashboard,
+  LogOut,
+  PanelLeft,
+  Users,
+  PieChart,
+} from "lucide-react";
 import { CSSProperties, ComponentType, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -36,8 +44,11 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
   { icon: BarChart3, label: "Resultados", path: "/admin/results" },
+  { icon: PieChart, label: "Análises", path: "/admin/analyses" },
   { icon: Building2, label: "Organizações", path: "/admin/organizations" },
+  { icon: Users, label: "Usuários", path: "/admin/users" },
 ];
+
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -102,20 +113,23 @@ export default function DashboardLayout({
     );
   }
 
-  return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": `${sidebarWidth}px`,
-        } as CSSProperties
-      }
-    >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
-        {children}
-      </DashboardLayoutContent>
-    </SidebarProvider>
+    return (
+    <div className="admin-theme min-h-screen bg-background text-foreground">
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": `${sidebarWidth}px`,
+          } as CSSProperties
+        }
+      >
+        <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+          {children}
+        </DashboardLayoutContent>
+      </SidebarProvider>
+    </div>
   );
 }
+
 
 type DashboardLayoutContentProps = {
   children: React.ReactNode;

@@ -26,6 +26,7 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }),
 });
 
 export type User = typeof users.$inferSelect;
@@ -39,6 +40,8 @@ export const organizations = mysqlTable(
     slug: varchar("slug", { length: 255 }).notNull(),
     inviteCode: varchar("invite_code", { length: 64 }),
     domain: varchar("domain", { length: 255 }),
+    email: varchar("email", { length: 320 }), 
+    contactName: varchar("contact_name", { length: 255 }),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -48,6 +51,7 @@ export const organizations = mysqlTable(
     inviteCodeIdx: uniqueIndex("organizations_invite_code_idx").on(table.inviteCode),
   })
 );
+
 
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = typeof organizations.$inferInsert;
@@ -74,6 +78,11 @@ export const userOrganizations = mysqlTable(
 export type UserOrganization = typeof userOrganizations.$inferSelect;
 export type InsertUserOrganization = typeof userOrganizations.$inferInsert;
 
+export interface GiftScoreRow {
+  gift: string;
+  score: number;
+}
+
 /**
  * Tabela de testes de dons
  */
@@ -85,20 +94,30 @@ export const giftTests = mysqlTable("gift_tests", {
   organizationId: int("organization_id").references(() => organizations.id, {
     onDelete: "set null",
   }),
-  status: mysqlEnum("status", ["in_progress", "awaiting_external", "completed"]).default("in_progress").notNull(),
+  status: mysqlEnum("status", ["in_progress", "awaiting_external", "completed"])
+    .default("in_progress")
+    .notNull(),
   selfAnswers: json("self_answers").$type<number[]>(), // 180 respostas de autoavaliação
   externalToken1: varchar("external_token_1", { length: 64 }),
   externalToken2: varchar("external_token_2", { length: 64 }),
   externalAnswers1: json("external_answers_1").$type<number[]>(), // 30 respostas da primeira pessoa
   externalAnswers2: json("external_answers_2").$type<number[]>(), // 30 respostas da segunda pessoa
-  externalCompleted1: boolean("external_completed_1").default(false).notNull(), // Se o link 1 já foi respondido
-  externalCompleted2: boolean("external_completed_2").default(false).notNull(), // Se o link 2 já foi respondido
+  externalCompleted1: boolean("external_completed_1").default(false).notNull(),
+  externalCompleted2: boolean("external_completed_2").default(false).notNull(),
+
+  // JÁ EXISTENTES
   manifestGifts: json("manifest_gifts").$type<string[]>(), // Dons manifestos calculados
-  latentGifts: json("latent_gifts").$type<string[]>(), // Dons latentes calculados
+  latentGifts: json("latent_gifts").$type<string[]>(),     // Dons latentes calculados
+
+  // NOVOS CAMPOS COM PONTUAÇÃO
+  manifestGiftScores: json("manifest_gift_scores").$type<GiftScoreRow[]>(),
+  latentGiftScores: json("latent_gift_scores").$type<GiftScoreRow[]>(),
+
   resultSentAt: timestamp("result_sent_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
+
 
 export type GiftTest = typeof giftTests.$inferSelect;
 export type InsertGiftTest = typeof giftTests.$inferInsert;

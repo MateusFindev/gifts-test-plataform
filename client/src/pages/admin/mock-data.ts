@@ -354,3 +354,62 @@ export const mockUpcomingEvents = [
     startAt: addDays(today, 11).toISOString(),
   },
 ];
+
+
+// === Usuários (Admin) ===
+
+export type AdminUserStatus = "active" | "invited" | "blocked";
+
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: "SUPER_ADMIN" | "ORG_ADMIN" | "END_USER";
+  organizationName?: string;
+  status: AdminUserStatus;
+  lastLoginAt?: string;
+  createdAt: string;
+};
+
+export const mockUsers: AdminUser[] = [
+  {
+    id: "USR-0001",
+    name: "Lucas Fin",
+    email: "lucas@exemplo.com",
+    role: "SUPER_ADMIN",
+    organizationName: "Plataforma Teste de Dons",
+    status: "active",
+    lastLoginAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "USR-0002",
+    name: "Ana Souza",
+    email: "ana.souza@igrejaexemplo.com",
+    role: "ORG_ADMIN",
+    organizationName: "Igreja Comunidade Vida",
+    status: "active",
+    lastLoginAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+  },
+  {
+    id: "USR-0003",
+    name: "Carlos Lima",
+    email: "carlos.lima@igrejaexemplo.com",
+    role: "END_USER",
+    organizationName: "Igreja Comunidade Vida",
+    status: "invited",
+    lastLoginAt: undefined,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+  },
+  {
+    id: "USR-0004",
+    name: "Mariana Alves",
+    email: "mariana.alves@comunidadegraca.com",
+    role: "END_USER",
+    organizationName: "Comunidade Graça Viva",
+    status: "blocked",
+    lastLoginAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 40).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
+  },
+];

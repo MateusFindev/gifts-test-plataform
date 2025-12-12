@@ -10,16 +10,6 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-const ORGANIZATIONS = [
-  "OBPC Cafelândia",
-  "OBPC Central - Telêmaco",
-  "OBPC São Cristóvão - Cascavel",
-  "Igreja Comunidade do Evangelho",
-  "AEAV",
-  "Control Fin",
-  "Nenhuma",
-] as const;
-
 export default function TestInfo() {
   const [, setLocation] = useLocation();
   const [name, setName] = useState("");
@@ -27,6 +17,10 @@ export default function TestInfo() {
   const [organization, setOrganization] = useState("");
   const [alternateEmail, setAlternateEmail] = useState("");
   const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
+  const [organizationId, setOrganizationId] = useState<number | null>(null);
+
+  const organizationsQuery = trpc.giftTest.organizations.useQuery();
+  const organizations = organizationsQuery.data ?? [];
 
   const createTestMutation = trpc.giftTest.create.useMutation({
     onSuccess: (data) => {
@@ -50,10 +44,11 @@ export default function TestInfo() {
       return;
     }
 
-    if (!organization) {
+    if (!organizationId && organization !== "Nenhuma") {
       toast.error("Por favor, selecione uma organização");
       return;
     }
+
 
     const trimmedAlternateEmail = alternateEmail.trim();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -75,8 +70,10 @@ export default function TestInfo() {
     createTestMutation.mutate({
       name: trimmedName,
       email: trimmedEmail,
-      organization,
+      organizationId: organizationId ?? undefined,
+      organization: organization === "Nenhuma" ? null : organization,
     });
+
   };
 
   return (
@@ -119,19 +116,49 @@ export default function TestInfo() {
 
             <div className="space-y-2">
               <Label htmlFor="organization">Organização *</Label>
-              <Select value={organization || undefined} onValueChange={setOrganization}>
+              <Select
+                value={organization || undefined}
+                onValueChange={(value) => {
+                  setOrganization(value);
+
+                  if (value === "Nenhuma") {
+                    setOrganizationId(null);
+                    return;
+                  }
+
+                  const org = organizations.find(
+                    (o) => o.name === value
+                  );
+
+                  setOrganizationId(org ? org.id : null);
+                }}
+                disabled={organizationsQuery.isLoading || organizationsQuery.isError}
+              >
                 <SelectTrigger id="organization">
-                  <SelectValue placeholder="Selecione uma organização" />
+                  <SelectValue
+                    placeholder={
+                      organizationsQuery.isLoading
+                        ? "Carregando organizações..."
+                        : "Selecione uma organização"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {ORGANIZATIONS.map((org) => (
-                    <SelectItem key={org} value={org}>
-                      {org}
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.name}>
+                      {org.name}
                     </SelectItem>
                   ))}
+                  <SelectItem value="Nenhuma">Nenhuma</SelectItem>
                 </SelectContent>
               </Select>
+              {organizationsQuery.isError && (
+                <p className="text-xs text-red-500 mt-1">
+                  Erro ao carregar organizações. Tente novamente mais tarde.
+                </p>
+              )}
             </div>
+
 
             {organization === "Nenhuma" && (
               <div className="space-y-2">

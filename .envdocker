@@ -1,0 +1,14 @@
+DATABASE_URL=mysql://gifts_user:gifts_password@db:3306/gifts_test
+JWT_SECRET=4f234e8f4e51ad6a54999ac3b56e9e2b179e030a636c1216dbe228de3bee31f
+GMAIL_USER=teste.dons.resultado@gmail.com
+GMAIL_APP_PASSWORD=zcmjqbwfzypersfh
+VITE_APP_ID=gifts-test-platform
+VITE_APP_TITLE=Teste de Dons Espirituais
+OAUTH_SERVER_URL=http://localhost:3000
+VITE_OAUTH_PORTAL_URL=http://localhost:3000
+OWNER_OPEN_ID=
+OWNER_NAME=
+
+LOCAL_ADMIN_EMAIL=admin@admin.com
+LOCAL_ADMIN_PASSWORD=123mudar
+LOCAL_ADMIN_NAME=Administrador

@@ -203,3 +203,7 @@ docker compose down
 docker compose down -v --rmi all --remove-orphans
 docker compose build client --no-cache
 docker compose up -d 
+
+
+docker-compose down -v --rmi all
+docker-compose up -d

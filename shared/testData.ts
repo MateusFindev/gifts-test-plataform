@@ -13,9 +13,9 @@ export const SECTION_SCALES = [
     options: [
       { value: 4, label: "Muitíssimo" },
       { value: 3, label: "Muito" },
-      { value: 2, label: "Eventualmente" },
-      { value: 1, label: "Raramente" },
-      { value: 0, label: "De forma nenhuma" },
+      { value: 2, label: "Mais ou menos" },
+      { value: 1, label: "Pouco" },
+      { value: 0, label: "Nenhum pouco" },
     ],
     prefix: "Sinto-me",
     suffix: "realizado(a) ao",
@@ -30,14 +30,14 @@ export const SECTION_SCALES = [
       { value: 0, label: "Nenhuma vontade" },
     ],
     prefix: "Tenho",
-    suffix: "de me envolver, mais do que fiz até agora, em",
+    suffix: "de dedicar mais esforço em",
   },
   {
     // Seção 3
     options: [
       { value: 4, label: "Muitas vezes" },
       { value: 3, label: "Frequentemente" },
-      { value: 2, label: "De vez em quando" },
+      { value: 2, label: "Algumas vezes" },
       { value: 1, label: "Raramente" },
       { value: 0, label: "Nunca" },
     ],
@@ -47,14 +47,14 @@ export const SECTION_SCALES = [
   {
     // Seção 4
     options: [
-      { value: 4, label: "Muito fortemente" },
-      { value: 3, label: "Fortemente" },
-      { value: 2, label: "Mais ou menos" },
-      { value: 1, label: "Muito pouco" },
-      { value: 0, label: "Não correspondem" },
+      { value: 4, label: "Sempre" },
+      { value: 3, label: "Frequentemente" },
+      { value: 2, label: "Ás vezes" },
+      { value: 1, label: "Raramente" },
+      { value: 0, label: "Nunca" },
     ],
-    prefix: "As afirmações a seguir",
-    suffix: "correspondem:",
+    prefix: "Refletindo, percebo que",
+    suffix: " ",
   },
   {
     // Seção 5
@@ -63,10 +63,10 @@ export const SECTION_SCALES = [
       { value: 3, label: "É fácil" },
       { value: 2, label: "Não é nem fácil nem difícil" },
       { value: 1, label: "É relativamente difícil" },
-      { value: 0, label: "É bem difícil" },
+      { value: 0, label: "É bem difícil (ou nunca tive experiência)" },
     ],
     prefix: "Para mim",
-    suffix: "",
+    suffix: " ",
   },
   {
     // Seção 6
@@ -90,6 +90,6 @@ export const EXTERNAL_SCALE = {
     { value: 1, label: "Que raramente" },
     { value: 0, label: "Que de forma nenhuma" },
   ],
-  prefix: "Em relação a",
-  suffix: "posso imaginar",
+  prefix: "Em relação a essa pessoa, posso imaginar",
+  suffix: " ",
 };
