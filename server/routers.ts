@@ -876,8 +876,9 @@ export const appRouter = router({
         const tests = await getAllGiftTestsByEmail(input.email);
         
         // Buscar teste em andamento (não completado)
+        // Aceita testes mesmo sem respostas ainda (selfAnswers pode estar vazio)
         const inProgressTest = tests.find(
-          test => test.status === "in_progress" && test.selfAnswers
+          test => test.status === "in_progress"
         );
 
         if (!inProgressTest) {
