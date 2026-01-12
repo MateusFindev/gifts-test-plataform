@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,29 +37,39 @@ export default function TestInfo() {
     { email: emailToCheck },
     {
       enabled: checkingEmail && emailToCheck.length > 0,
-      onSuccess: (data) => {
-        setCheckingEmail(false);
-        if (data.hasInProgressTest) {
-          setInProgressTest({
-            testId: data.testId!,
-            name: data.name!,
-            selfAnswers: data.selfAnswers as number[],
-            createdAt: new Date(data.createdAt!),
-          });
-          setShowContinueDialog(true);
-        } else {
-          // Não há teste em andamento, criar novo
-          proceedWithNewTest();
-        }
-      },
-      onError: (error) => {
-        setCheckingEmail(false);
-        // Se não encontrar teste, criar novo
-        console.log("Nenhum teste em andamento encontrado:", error.message);
-        proceedWithNewTest();
-      },
+      retry: false,
     }
   );
+
+  // Processar resultado da query com useEffect
+  useEffect(() => {
+    if (!checkingEmail) return;
+
+    if (checkInProgressQuery.isSuccess) {
+      setCheckingEmail(false);
+      const data = checkInProgressQuery.data;
+      
+      if (data.hasInProgressTest) {
+        setInProgressTest({
+          testId: data.testId!,
+          name: data.name!,
+          selfAnswers: data.selfAnswers as number[],
+          createdAt: new Date(data.createdAt!),
+        });
+        setShowContinueDialog(true);
+      } else {
+        // Não há teste em andamento, criar novo
+        proceedWithNewTest();
+      }
+    }
+
+    if (checkInProgressQuery.isError) {
+      setCheckingEmail(false);
+      // Se não encontrar teste, criar novo
+      console.log("Nenhum teste em andamento encontrado:", checkInProgressQuery.error.message);
+      proceedWithNewTest();
+    }
+  }, [checkInProgressQuery.isSuccess, checkInProgressQuery.isError, checkingEmail]);
 
   const createTestMutation = trpc.giftTest.create.useMutation({
     onSuccess: (data) => {
