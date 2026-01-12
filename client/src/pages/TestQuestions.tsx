@@ -48,8 +48,20 @@ export default function TestQuestions() {
 
   const flattenedVisibleQuestions = useMemo(() => visibleQuestionIndexes.flat(), [visibleQuestionIndexes]);
 
-  const currentSectionQuestions = visibleQuestionIndexes[currentSection] ?? [];
-  const globalQuestionIndex = currentSectionQuestions[currentQuestion] ?? 0;
+  // Guard: verificar se arrays estão inicializados
+  const isInitialized = useMemo(() => {
+    return (
+      visibleQuestionIndexes.length > 0 &&
+      visibleQuestionIndexes[currentSection] !== undefined &&
+      visibleQuestionIndexes[currentSection] !== null &&
+      Array.isArray(visibleQuestionIndexes[currentSection])
+    );
+  }, [visibleQuestionIndexes, currentSection]);
+
+  const currentSectionQuestions = isInitialized ? visibleQuestionIndexes[currentSection] : [];
+  const globalQuestionIndex = currentSectionQuestions.length > 0 && currentQuestion < currentSectionQuestions.length
+    ? currentSectionQuestions[currentQuestion]
+    : 0;
   const questionText =
     globalQuestionIndex !== undefined && SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex]
       ? SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex]
@@ -375,6 +387,23 @@ export default function TestQuestions() {
     globalQuestionIndex !== undefined && currentAnswer !== -1
       ? scale.options.find(opt => opt.value === currentAnswer)?.label.toUpperCase()
       : null;
+
+  // Loading state: aguardar inicialização completa
+  if (!isInitialized || !hasInitializedPosition || testId === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <p className="text-lg font-medium text-gray-700">Carregando teste...</p>
+              <p className="text-sm text-gray-500">Preparando suas perguntas</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
