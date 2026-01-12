@@ -49,11 +49,15 @@ export default function TestQuestions() {
   const flattenedVisibleQuestions = useMemo(() => visibleQuestionIndexes.flat(), [visibleQuestionIndexes]);
 
   const currentSectionQuestions = visibleQuestionIndexes[currentSection] ?? [];
-  const globalQuestionIndex = currentSectionQuestions[currentQuestion];
+  const globalQuestionIndex = currentSectionQuestions[currentQuestion] ?? 0;
   const questionText =
-    globalQuestionIndex !== undefined ? SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex] : "";
-  const scale = SECTION_SCALES[currentSection];
-  const currentAnswer = globalQuestionIndex !== undefined ? answers[globalQuestionIndex] : -1;
+    globalQuestionIndex !== undefined && SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex]
+      ? SELF_ASSESSMENT_QUESTIONS[globalQuestionIndex]
+      : "";
+  const scale = SECTION_SCALES[currentSection] ?? SECTION_SCALES[0];
+  const currentAnswer = globalQuestionIndex !== undefined && answers[globalQuestionIndex] !== undefined
+    ? answers[globalQuestionIndex]
+    : -1;
 
   const totalVisibleQuestions = flattenedVisibleQuestions.length;
   const totalProgress = flattenedVisibleQuestions.filter(index => answers[index] !== -1).length;
