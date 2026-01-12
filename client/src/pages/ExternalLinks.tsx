@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { Copy, Check, Mail } from "lucide-react";
+import { Copy, Check, Mail, MessageCircle } from "lucide-react";
 
 export default function ExternalLinks() {
   const [, setLocation] = useLocation();
@@ -40,7 +40,17 @@ export default function ExternalLinks() {
       setCopied2(true);
       setTimeout(() => setCopied2(false), 2000);
     }
-    toast.success(`Link ${linkNumber} copiado!`);
+    toast.success(`Link ${linkNumber} copiado para a área de transferência!`);
+  };
+
+  const shareOnWhatsApp = (token: string, linkNumber: number) => {
+    const url = getFullUrl(token);
+    const message = encodeURIComponent(
+      `Olá! 👋\n\nVocê pode me ajudar respondendo esta avaliação sobre mim? São apenas 30 perguntas e vai me ajudar muito a conhecer melhor meus dons espirituais.\n\n${url}\n\nObrigado! 🙏`
+    );
+    const whatsappUrl = `https://wa.me/?text=${message}`;
+    window.open(whatsappUrl, "_blank");
+    toast.success(`Abrindo WhatsApp para compartilhar o Link ${linkNumber}...`);
   };
 
   return (
@@ -61,56 +71,122 @@ export default function ExternalLinks() {
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">Link para a Primeira Pessoa</h3>
-              <div className="flex gap-2">
-                <Input value={getFullUrl(token1)} readOnly className="flex-1" />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(token1, 1)}
-                >
-                  {copied1 ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
+          {/* Link 1 */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-lg">Link para a Primeira Pessoa</h3>
+            <div className="flex gap-2">
+              <Input 
+                value={getFullUrl(token1)} 
+                readOnly 
+                className="flex-1 text-sm"
+                onClick={(e) => e.currentTarget.select()}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => copyToClipboard(token1, 1)}
+                title="Copiar link"
+                className="flex-shrink-0"
+              >
+                {copied1 ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              </Button>
             </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => copyToClipboard(token1, 1)}
+                variant="outline"
+                className="flex-1 h-12 text-base"
+              >
+                <Copy className="mr-2 h-5 w-5" />
+                Copiar Link 1
+              </Button>
+              <Button
+                onClick={() => shareOnWhatsApp(token1, 1)}
+                className="flex-1 h-12 text-base bg-green-600 hover:bg-green-700"
+              >
+                <MessageCircle className="mr-2 h-5 w-5" />
+                Enviar no WhatsApp
+              </Button>
+            </div>
+          </div>
 
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">Link para a Segunda Pessoa</h3>
-              <div className="flex gap-2">
-                <Input value={getFullUrl(token2)} readOnly className="flex-1" />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copyToClipboard(token2, 2)}
-                >
-                  {copied2 ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
+          {/* Separador visual */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">E</span>
+            </div>
+          </div>
+
+          {/* Link 2 */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-lg">Link para a Segunda Pessoa</h3>
+            <div className="flex gap-2">
+              <Input 
+                value={getFullUrl(token2)} 
+                readOnly 
+                className="flex-1 text-sm"
+                onClick={(e) => e.currentTarget.select()}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => copyToClipboard(token2, 2)}
+                title="Copiar link"
+                className="flex-shrink-0"
+              >
+                {copied2 ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => copyToClipboard(token2, 2)}
+                variant="outline"
+                className="flex-1 h-12 text-base"
+              >
+                <Copy className="mr-2 h-5 w-5" />
+                Copiar Link 2
+              </Button>
+              <Button
+                onClick={() => shareOnWhatsApp(token2, 2)}
+                className="flex-1 h-12 text-base bg-green-600 hover:bg-green-700"
+              >
+                <MessageCircle className="mr-2 h-5 w-5" />
+                Enviar no WhatsApp
+              </Button>
             </div>
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <Mail className="h-5 w-5 text-green-600 mt-0.5" />
+              <Mail className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-green-900 mb-1">Próximos passos:</h4>
-                <ol className="text-sm text-green-800 space-y-1">
-                  <li>1. Envie cada link para uma pessoa diferente</li>
-                  <li>2. Aguarde as duas pessoas responderem</li>
-                  <li>3. Você receberá o resultado por email automaticamente</li>
-                  <li>4. Também poderá consultar o resultado usando seu email</li>
+                <h4 className="font-semibold text-green-900 mb-2">Próximos passos:</h4>
+                <ol className="text-sm text-green-800 space-y-1.5">
+                  <li><strong>1.</strong> Envie cada link para uma pessoa diferente (use os botões acima)</li>
+                  <li><strong>2.</strong> Aguarde as duas pessoas responderem as 30 perguntas</li>
+                  <li><strong>3.</strong> Você receberá o resultado por email automaticamente</li>
+                  <li><strong>4.</strong> Também poderá consultar o resultado a qualquer momento usando seu email</li>
                 </ol>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setLocation("/")} className="flex-1">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              <strong>💡 Dica:</strong> Escolha pessoas próximas como familiares, amigos de longa data, 
+              líderes espirituais ou colegas que convivem com você regularmente. Quanto melhor te conhecerem, 
+              mais preciso será o resultado!
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={() => setLocation("/")} className="flex-1 h-12">
               Voltar ao Início
             </Button>
-            <Button onClick={() => setLocation("/check-result")} className="flex-1">
+            <Button onClick={() => setLocation("/check-result")} className="flex-1 h-12 bg-blue-600 hover:bg-blue-700">
               Consultar Resultado
             </Button>
           </div>

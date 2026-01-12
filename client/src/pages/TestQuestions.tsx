@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { SELF_ASSESSMENT_QUESTIONS, SECTION_SCALES } from "@shared/testData";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { CompletionDialog } from "@/components/CompletionDialog";
 
 const QUESTIONS_PER_SECTION = 30;
 const TOTAL_SECTIONS = 6;
@@ -14,6 +15,7 @@ const HIDDEN_CELIBACY_QUESTION_INDEXES = [2, 32, 62, 122, 152] as const;
 const HIDDEN_CELIBACY_SET = new Set<number>(HIDDEN_CELIBACY_QUESTION_INDEXES);
 const EMPTY_SET = new Set<number>();
 const STORAGE_KEY_PREFIX = "giftTest_";
+const AUTOSAVE_INTERVAL = 30000; // 30 segundos
 
 export default function TestQuestions() {
   const [, setLocation] = useLocation();
@@ -25,11 +27,11 @@ export default function TestQuestions() {
   const [justSelected, setJustSelected] = useState(false);
   const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const savedPositionRef = useRef<number | null>(null);
-
+  const lastSavedAnswersRef = useRef<string>("");
 
   const baseSectionIndexes = useMemo(
-
     () =>
       Array.from({ length: TOTAL_SECTIONS }, (_, sectionIndex) =>
         Array.from({ length: QUESTIONS_PER_SECTION }, (_, questionIndex) => sectionIndex * QUESTIONS_PER_SECTION + questionIndex)
@@ -57,7 +59,14 @@ export default function TestQuestions() {
   const totalProgress = flattenedVisibleQuestions.filter(index => answers[index] !== -1).length;
   const totalProgressPercentage = totalVisibleQuestions > 0 ? (totalProgress / totalVisibleQuestions) * 100 : 0;
 
-  // Carregar progresso do localStorage
+  // Mutation para salvar progresso no banco
+  const saveProgressMutation = trpc.giftTest.saveProgress.useMutation({
+    onError: (error) => {
+      console.error("Erro ao salvar progresso:", error);
+    },
+  });
+
+  // Carregar progresso do localStorage e banco
   useEffect(() => {
     const storedStatus = sessionStorage.getItem("testMaritalStatus");
     if (storedStatus === "married" || storedStatus === "single") {
@@ -81,6 +90,7 @@ export default function TestQuestions() {
       try {
         const parsed = JSON.parse(savedAnswers);
         setAnswers(parsed);
+        lastSavedAnswersRef.current = savedAnswers;
         toast.success("Progresso restaurado!");
       } catch (error) {
         console.error("Erro ao carregar progresso:", error);
@@ -127,6 +137,26 @@ export default function TestQuestions() {
     globalQuestionIndex,
     flattenedVisibleQuestions,
   ]);
+
+  // Autosave no banco a cada 30 segundos
+  useEffect(() => {
+    if (testId === null) return;
+
+    const interval = setInterval(() => {
+      const currentAnswersStr = JSON.stringify(answers);
+      
+      // Só salva se houver mudanças
+      if (currentAnswersStr !== lastSavedAnswersRef.current) {
+        saveProgressMutation.mutate({
+          testId,
+          answers,
+        });
+        lastSavedAnswersRef.current = currentAnswersStr;
+      }
+    }, AUTOSAVE_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [testId, answers]);
 
   useEffect(() => {
     if (maritalStatus !== "married") {
@@ -238,10 +268,21 @@ export default function TestQuestions() {
       ? currentQuestion >= currentSectionQuestions.length - 1
       : true;
 
+    // Verificar se é a última pergunta (180)
+    const isLastQuestion = currentSection === TOTAL_SECTIONS - 1 && isLastQuestionInSection;
+    const allAnswered = flattenedVisibleQuestions.every(index => {
+      const idx = flattenedVisibleQuestions.indexOf(index);
+      return idx < flattenedVisibleQuestions.indexOf(globalQuestionIndex) + 1 ? newAnswers[index] !== -1 : true;
+    });
+
     // Auto-avançar para próxima pergunta após 1500ms (1,5 segundos)
     setTimeout(() => {
       setIsTransitioning(false);
-      if (hasQuestionsInSection && !isLastQuestionInSection) {
+      
+      // Se for a última pergunta e todas foram respondidas, mostrar modal
+      if (isLastQuestion && allAnswered) {
+        setShowCompletionDialog(true);
+      } else if (hasQuestionsInSection && !isLastQuestionInSection) {
         setCurrentQuestion(currentQuestion + 1);
       } else if (currentSection < TOTAL_SECTIONS - 1) {
         setCurrentSection(currentSection + 1);
@@ -312,6 +353,11 @@ export default function TestQuestions() {
       testId,
       answers: finalAnswers,
     });
+  };
+
+  const handleCompletionContinue = () => {
+    setShowCompletionDialog(false);
+    handleFinish();
   };
 
   const isLastSection = currentSection === TOTAL_SECTIONS - 1;
@@ -456,10 +502,16 @@ export default function TestQuestions() {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800">
             <strong>Dica:</strong> Responda com sinceridade. Não há respostas certas ou erradas.
-            Seu progresso é salvo automaticamente - você pode recarregar a página sem perder suas respostas.
+            Seu progresso é salvo automaticamente - você pode recarregar a página ou voltar depois sem perder suas respostas.
           </p>
         </div>
       </div>
+
+      {/* Modal de conclusão */}
+      <CompletionDialog
+        open={showCompletionDialog}
+        onContinue={handleCompletionContinue}
+      />
 
       {/* Keyframes CSS para animação de drop */}
       <style>{`

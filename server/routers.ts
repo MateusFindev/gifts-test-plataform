@@ -868,6 +868,45 @@ export const appRouter = router({
       const orgs = await listActiveOrganizations();
       return orgs;
     }),
+
+    // Verificar se existe teste em andamento para um email
+    checkInProgressTest: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .query(async ({ input }) => {
+        const tests = await getAllGiftTestsByEmail(input.email);
+        
+        // Buscar teste em andamento (não completado)
+        const inProgressTest = tests.find(
+          test => test.status === "in_progress" && test.selfAnswers
+        );
+
+        if (!inProgressTest) {
+          return { hasInProgressTest: false };
+        }
+
+        return {
+          hasInProgressTest: true,
+          testId: inProgressTest.id,
+          name: inProgressTest.name,
+          selfAnswers: inProgressTest.selfAnswers,
+          createdAt: inProgressTest.createdAt,
+        };
+      }),
+
+    // Salvar progresso parcial das respostas
+    saveProgress: publicProcedure
+      .input(
+        z.object({
+          testId: z.number(),
+          answers: z.array(z.number().min(-1).max(4)).length(180),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await updateGiftTest(input.testId, {
+          selfAnswers: input.answers,
+        });
+        return { success: true };
+      }),
   }),
 
   adminAnalysis: router({

@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { ContinueTestDialog } from "@/components/ContinueTestDialog";
 
 export default function TestInfo() {
   const [, setLocation] = useLocation();
@@ -18,9 +19,38 @@ export default function TestInfo() {
   const [alternateEmail, setAlternateEmail] = useState("");
   const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
   const [organizationId, setOrganizationId] = useState<number | null>(null);
+  const [showContinueDialog, setShowContinueDialog] = useState(false);
+  const [inProgressTest, setInProgressTest] = useState<{
+    testId: number;
+    name: string;
+    selfAnswers: number[];
+    createdAt: Date;
+  } | null>(null);
 
   const organizationsQuery = trpc.giftTest.organizations.useQuery();
   const organizations = organizationsQuery.data ?? [];
+
+  const checkInProgressMutation = trpc.giftTest.checkInProgressTest.useMutation({
+    onSuccess: (data) => {
+      if (data.hasInProgressTest) {
+        setInProgressTest({
+          testId: data.testId!,
+          name: data.name!,
+          selfAnswers: data.selfAnswers as number[],
+          createdAt: new Date(data.createdAt!),
+        });
+        setShowContinueDialog(true);
+      } else {
+        // Não há teste em andamento, criar novo
+        proceedWithNewTest();
+      }
+    },
+    onError: (error) => {
+      // Se não encontrar teste, criar novo
+      console.log("Nenhum teste em andamento encontrado:", error.message);
+      proceedWithNewTest();
+    },
+  });
 
   const createTestMutation = trpc.giftTest.create.useMutation({
     onSuccess: (data) => {
@@ -32,6 +62,49 @@ export default function TestInfo() {
       toast.error("Erro ao criar teste: " + error.message);
     },
   });
+
+  const proceedWithNewTest = () => {
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+
+    createTestMutation.mutate({
+      name: trimmedName,
+      email: trimmedEmail,
+      organizationId: organizationId ?? undefined,
+      organization: organization === "Nenhuma" ? null : organization,
+    });
+  };
+
+  const handleContinueTest = () => {
+    if (!inProgressTest) return;
+
+    // Salvar informações no sessionStorage
+    sessionStorage.setItem("currentTestId", inProgressTest.testId.toString());
+    sessionStorage.setItem("testMaritalStatus", maritalStatus);
+    sessionStorage.setItem("testOrganization", organization);
+
+    // Salvar respostas no localStorage
+    const storageKey = `giftTest_${inProgressTest.testId}_answers`;
+    localStorage.setItem(storageKey, JSON.stringify(inProgressTest.selfAnswers));
+
+    toast.success("Continuando teste anterior...");
+    setLocation("/test/questions");
+  };
+
+  const handleStartNewTest = () => {
+    setShowContinueDialog(false);
+    
+    // Limpar localStorage do teste anterior se existir
+    if (inProgressTest) {
+      const storageKey = `giftTest_${inProgressTest.testId}_answers`;
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(`giftTest_${inProgressTest.testId}_section`);
+      localStorage.removeItem(`giftTest_${inProgressTest.testId}_question`);
+      localStorage.removeItem(`giftTest_${inProgressTest.testId}_globalIndex`);
+    }
+
+    proceedWithNewTest();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +121,6 @@ export default function TestInfo() {
       toast.error("Por favor, selecione uma organização");
       return;
     }
-
 
     const trimmedAlternateEmail = alternateEmail.trim();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,13 +139,8 @@ export default function TestInfo() {
       sessionStorage.removeItem("testAlternateResultEmail");
     }
 
-    createTestMutation.mutate({
-      name: trimmedName,
-      email: trimmedEmail,
-      organizationId: organizationId ?? undefined,
-      organization: organization === "Nenhuma" ? null : organization,
-    });
-
+    // Verificar se existe teste em andamento
+    checkInProgressMutation.mutate({ email: trimmedEmail });
   };
 
   return (
@@ -159,7 +226,6 @@ export default function TestInfo() {
               )}
             </div>
 
-
             {organization === "Nenhuma" && (
               <div className="space-y-2">
                 <Label htmlFor="alternateEmail">Email adicional para compartilhar o resultado</Label>
@@ -222,13 +288,13 @@ export default function TestInfo() {
               </Button>
               <Button
                 type="submit"
-                disabled={createTestMutation.isPending}
+                disabled={createTestMutation.isPending || checkInProgressMutation.isPending}
                 className="flex-1"
               >
-                {createTestMutation.isPending ? (
+                {(createTestMutation.isPending || checkInProgressMutation.isPending) ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Criando...
+                    Verificando...
                   </>
                 ) : (
                   "Iniciar Teste"
@@ -238,6 +304,16 @@ export default function TestInfo() {
           </form>
         </CardContent>
       </Card>
+
+      {inProgressTest && (
+        <ContinueTestDialog
+          open={showContinueDialog}
+          onContinue={handleContinueTest}
+          onStartNew={handleStartNewTest}
+          testName={inProgressTest.name}
+          createdAt={inProgressTest.createdAt}
+        />
+      )}
     </div>
   );
 }
