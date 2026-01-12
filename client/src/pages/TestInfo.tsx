@@ -13,8 +13,8 @@ import { ContinueTestDialog } from "@/components/ContinueTestDialog";
 
 export default function TestInfo() {
   const [, setLocation] = useLocation();
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [organization, setOrganization] = useState("");
   const [alternateEmail, setAlternateEmail] = useState("");
   const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
@@ -26,27 +26,27 @@ export default function TestInfo() {
     selfAnswers: number[];
     createdAt: Date;
   } | null>(null);
-  const [checkingEmail, setCheckingEmail] = useState(false);
   const [emailToCheck, setEmailToCheck] = useState("");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const organizationsQuery = trpc.giftTest.organizations.useQuery();
   const organizations = organizationsQuery.data ?? [];
 
-  // Usar useQuery com enabled condicional
+  // Query para verificar teste em andamento
   const checkInProgressQuery = trpc.giftTest.checkInProgressTest.useQuery(
     { email: emailToCheck },
     {
-      enabled: checkingEmail && emailToCheck.length > 0,
+      enabled: isCheckingEmail && emailToCheck.length > 0,
       retry: false,
     }
   );
 
-  // Processar resultado da query com useEffect
+  // Processar resultado da verificação
   useEffect(() => {
-    if (!checkingEmail) return;
+    if (!isCheckingEmail) return;
 
     if (checkInProgressQuery.isSuccess) {
-      setCheckingEmail(false);
+      setIsCheckingEmail(false);
       const data = checkInProgressQuery.data;
       
       if (data.hasInProgressTest) {
@@ -57,19 +57,15 @@ export default function TestInfo() {
           createdAt: new Date(data.createdAt!),
         });
         setShowContinueDialog(true);
-      } else {
-        // Não há teste em andamento, criar novo
-        proceedWithNewTest();
       }
     }
 
     if (checkInProgressQuery.isError) {
-      setCheckingEmail(false);
-      // Se não encontrar teste, criar novo
-      console.log("Nenhum teste em andamento encontrado:", checkInProgressQuery.error.message);
-      proceedWithNewTest();
+      setIsCheckingEmail(false);
+      // Sem teste em andamento, continua normalmente
+      console.log("Nenhum teste em andamento encontrado");
     }
-  }, [checkInProgressQuery.isSuccess, checkInProgressQuery.isError, checkingEmail]);
+  }, [checkInProgressQuery.isSuccess, checkInProgressQuery.isError, isCheckingEmail]);
 
   const createTestMutation = trpc.giftTest.create.useMutation({
     onSuccess: (data) => {
@@ -82,16 +78,19 @@ export default function TestInfo() {
     },
   });
 
-  const proceedWithNewTest = () => {
-    const trimmedName = name.trim();
+  // Verificar teste em andamento quando sair do campo email
+  const handleEmailBlur = () => {
     const trimmedEmail = email.trim();
+    
+    // Validar email básico
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailPattern.test(trimmedEmail)) {
+      return; // Não verifica se email inválido
+    }
 
-    createTestMutation.mutate({
-      name: trimmedName,
-      email: trimmedEmail,
-      organizationId: organizationId ?? undefined,
-      organization: organization === "Nenhuma" ? null : organization,
-    });
+    // Verificar se existe teste em andamento
+    setEmailToCheck(trimmedEmail);
+    setIsCheckingEmail(true);
   };
 
   const handleContinueTest = () => {
@@ -122,7 +121,8 @@ export default function TestInfo() {
       localStorage.removeItem(`giftTest_${inProgressTest.testId}_globalIndex`);
     }
 
-    proceedWithNewTest();
+    setInProgressTest(null);
+    // Usuário pode continuar preenchendo o formulário normalmente
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -131,8 +131,8 @@ export default function TestInfo() {
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
 
-    if (!trimmedName || !trimmedEmail) {
-      toast.error("Por favor, preencha nome e email");
+    if (!trimmedEmail || !trimmedName) {
+      toast.error("Por favor, preencha email e nome");
       return;
     }
 
@@ -158,9 +158,13 @@ export default function TestInfo() {
       sessionStorage.removeItem("testAlternateResultEmail");
     }
 
-    // Verificar se existe teste em andamento
-    setEmailToCheck(trimmedEmail);
-    setCheckingEmail(true);
+    // Criar novo teste
+    createTestMutation.mutate({
+      name: trimmedName,
+      email: trimmedEmail,
+      organizationId: organizationId ?? undefined,
+      organization: organization === "Nenhuma" ? null : organization,
+    });
   };
 
   return (
@@ -174,6 +178,31 @@ export default function TestInfo() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email como primeiro campo */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={handleEmailBlur}
+                  required
+                  disabled={isCheckingEmail}
+                />
+                {isCheckingEmail && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-gray-500">
+                O resultado será enviado para este email. Verificaremos se você tem um teste em andamento.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo *</Label>
               <Input
@@ -184,21 +213,6 @@ export default function TestInfo() {
                 onChange={(e) => setName(e.target.value)}
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <p className="text-sm text-gray-500">
-                O resultado será enviado para este email
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -308,13 +322,13 @@ export default function TestInfo() {
               </Button>
               <Button
                 type="submit"
-                disabled={createTestMutation.isPending || checkingEmail}
+                disabled={createTestMutation.isPending}
                 className="flex-1"
               >
-                {(createTestMutation.isPending || checkingEmail) ? (
+                {createTestMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verificando...
+                    Criando...
                   </>
                 ) : (
                   "Iniciar Teste"
