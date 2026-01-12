@@ -102,14 +102,23 @@ export default function TestQuestions() {
     // Carregar respostas salvas do localStorage
     const storageKey = `${STORAGE_KEY_PREFIX}${id}_answers`;
     const savedAnswers = localStorage.getItem(storageKey);
-    if (savedAnswers) {
+    if (savedAnswers && savedAnswers !== "null" && savedAnswers !== "undefined") {
       try {
         const parsed = JSON.parse(savedAnswers);
-        setAnswers(parsed);
-        lastSavedAnswersRef.current = savedAnswers;
-        toast.success("Progresso restaurado!");
+        // Validar se é realmente um array válido com 180 elementos
+        if (Array.isArray(parsed) && parsed.length === 180) {
+          setAnswers(parsed);
+          lastSavedAnswersRef.current = savedAnswers;
+          toast.success("Progresso restaurado!");
+        } else {
+          console.warn("Progresso inválido no localStorage, iniciando do zero");
+          // Limpar localStorage inválido
+          localStorage.removeItem(storageKey);
+        }
       } catch (error) {
         console.error("Erro ao carregar progresso:", error);
+        // Limpar localStorage corrompido
+        localStorage.removeItem(storageKey);
       }
     }
 
