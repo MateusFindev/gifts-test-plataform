@@ -26,31 +26,40 @@ export default function TestInfo() {
     selfAnswers: number[];
     createdAt: Date;
   } | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [emailToCheck, setEmailToCheck] = useState("");
 
   const organizationsQuery = trpc.giftTest.organizations.useQuery();
   const organizations = organizationsQuery.data ?? [];
 
-  const checkInProgressMutation = trpc.giftTest.checkInProgressTest.useMutation({
-    onSuccess: (data) => {
-      if (data.hasInProgressTest) {
-        setInProgressTest({
-          testId: data.testId!,
-          name: data.name!,
-          selfAnswers: data.selfAnswers as number[],
-          createdAt: new Date(data.createdAt!),
-        });
-        setShowContinueDialog(true);
-      } else {
-        // Não há teste em andamento, criar novo
+  // Usar useQuery com enabled condicional
+  const checkInProgressQuery = trpc.giftTest.checkInProgressTest.useQuery(
+    { email: emailToCheck },
+    {
+      enabled: checkingEmail && emailToCheck.length > 0,
+      onSuccess: (data) => {
+        setCheckingEmail(false);
+        if (data.hasInProgressTest) {
+          setInProgressTest({
+            testId: data.testId!,
+            name: data.name!,
+            selfAnswers: data.selfAnswers as number[],
+            createdAt: new Date(data.createdAt!),
+          });
+          setShowContinueDialog(true);
+        } else {
+          // Não há teste em andamento, criar novo
+          proceedWithNewTest();
+        }
+      },
+      onError: (error) => {
+        setCheckingEmail(false);
+        // Se não encontrar teste, criar novo
+        console.log("Nenhum teste em andamento encontrado:", error.message);
         proceedWithNewTest();
-      }
-    },
-    onError: (error) => {
-      // Se não encontrar teste, criar novo
-      console.log("Nenhum teste em andamento encontrado:", error.message);
-      proceedWithNewTest();
-    },
-  });
+      },
+    }
+  );
 
   const createTestMutation = trpc.giftTest.create.useMutation({
     onSuccess: (data) => {
@@ -140,7 +149,8 @@ export default function TestInfo() {
     }
 
     // Verificar se existe teste em andamento
-    checkInProgressMutation.mutate({ email: trimmedEmail });
+    setEmailToCheck(trimmedEmail);
+    setCheckingEmail(true);
   };
 
   return (
@@ -288,10 +298,10 @@ export default function TestInfo() {
               </Button>
               <Button
                 type="submit"
-                disabled={createTestMutation.isPending || checkInProgressMutation.isPending}
+                disabled={createTestMutation.isPending || checkingEmail}
                 className="flex-1"
               >
-                {(createTestMutation.isPending || checkInProgressMutation.isPending) ? (
+                {(createTestMutation.isPending || checkingEmail) ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Verificando...
