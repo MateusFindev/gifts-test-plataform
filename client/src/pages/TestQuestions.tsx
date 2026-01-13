@@ -28,6 +28,7 @@ export default function TestQuestions() {
   const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [answersLoaded, setAnswersLoaded] = useState(false);
   const savedPositionRef = useRef<number | null>(null);
   const lastSavedAnswersRef = useRef<string>("");
 
@@ -109,17 +110,23 @@ export default function TestQuestions() {
         if (Array.isArray(parsed) && parsed.length === 180) {
           setAnswers(parsed);
           lastSavedAnswersRef.current = savedAnswers;
+          setAnswersLoaded(true);
           toast.success("Progresso restaurado!");
         } else {
           console.warn("Progresso inválido no localStorage, iniciando do zero");
           // Limpar localStorage inválido
           localStorage.removeItem(storageKey);
+          setAnswersLoaded(true);
         }
       } catch (error) {
         console.error("Erro ao carregar progresso:", error);
         // Limpar localStorage corrompido
         localStorage.removeItem(storageKey);
+        setAnswersLoaded(true);
       }
+    } else {
+      // Não tem dados salvos, iniciar do zero
+      setAnswersLoaded(true);
     }
 
     const savedGlobalIndex = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_globalIndex`);
@@ -198,9 +205,10 @@ export default function TestQuestions() {
       return;
     }
 
-    // Aguardar answers carregar (se vier do localStorage, demora um pouco)
-    // Verifica se answers tem pelo menos uma resposta diferente do inicial
-    const hasLoadedAnswers = answers.some(a => a !== -1) || savedPositionRef.current === null;
+    // Aguardar answers carregar completamente
+    if (!answersLoaded) {
+      return;
+    }
 
     let targetGlobalIndex: number;
 
@@ -236,6 +244,7 @@ export default function TestQuestions() {
     flattenedVisibleQuestions,
     visibleQuestionIndexes,
     hasInitializedPosition,
+    answersLoaded,
   ]);
 
   const saveSelfAnswersMutation = trpc.giftTest.saveSelfAnswers.useMutation({
@@ -393,7 +402,7 @@ export default function TestQuestions() {
       : null;
 
   // Loading state: aguardar inicialização completa
-  if (!isInitialized || !hasInitializedPosition || testId === null) {
+  if (!isInitialized || !hasInitializedPosition || testId === null || !answersLoaded) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-md">
