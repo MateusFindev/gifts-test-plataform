@@ -825,6 +825,8 @@ export const appRouter = router({
           latentGiftScores: test.latentGiftScores,
           externalToken1: test.externalToken1,
           externalToken2: test.externalToken2,
+          externalCompleted1: test.externalCompleted1,
+          externalCompleted2: test.externalCompleted2,
           selfAnswers: test.selfAnswers,
           maritalStatus: test.maritalStatus,
         }));

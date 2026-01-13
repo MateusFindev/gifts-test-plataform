@@ -8,7 +8,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4 pt-16 sm:pt-4">
       <div className="absolute top-4 right-4 z-10">
           <Button variant="outline" size="sm" onClick={() => setLocation("/admin/login")} className="text-xs sm:text-sm">
             Painel Admin
