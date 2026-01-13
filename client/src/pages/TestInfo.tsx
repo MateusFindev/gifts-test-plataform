@@ -115,20 +115,33 @@ export default function TestInfo() {
     setLocation("/test/questions");
   };
 
+  const deleteTestMutation = trpc.giftTest.deleteInProgressTest.useMutation({
+    onSuccess: () => {
+      toast.success("Teste anterior excluído. Iniciando novo teste...");
+      setShowContinueDialog(false);
+      setInProgressTest(null);
+    },
+    onError: (error) => {
+      toast.error("Erro ao excluir teste anterior: " + error.message);
+      setShowContinueDialog(false);
+    },
+  });
+
   const handleStartNewTest = () => {
-    setShowContinueDialog(false);
-    
-    // Limpar localStorage do teste anterior se existir
+    // Deletar teste anterior do banco
     if (inProgressTest) {
+      // Limpar localStorage
       const storageKey = `giftTest_${inProgressTest.testId}_answers`;
       localStorage.removeItem(storageKey);
       localStorage.removeItem(`giftTest_${inProgressTest.testId}_section`);
       localStorage.removeItem(`giftTest_${inProgressTest.testId}_question`);
       localStorage.removeItem(`giftTest_${inProgressTest.testId}_globalIndex`);
-    }
 
-    setInProgressTest(null);
-    // Usuário pode continuar preenchendo o formulário normalmente
+      // Deletar do banco
+      deleteTestMutation.mutate({ testId: inProgressTest.testId });
+    } else {
+      setShowContinueDialog(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -908,6 +908,14 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+
+    // Deletar teste em andamento (para quando usuário quer começar novo)
+    deleteInProgressTest: publicProcedure
+      .input(z.object({ testId: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteGiftTestById(input.testId);
+        return { success: true };
+      }),
   }),
 
   adminAnalysis: router({

@@ -198,6 +198,10 @@ export default function TestQuestions() {
       return;
     }
 
+    // Aguardar answers carregar (se vier do localStorage, demora um pouco)
+    // Verifica se answers tem pelo menos uma resposta diferente do inicial
+    const hasLoadedAnswers = answers.some(a => a !== -1) || savedPositionRef.current === null;
+
     let targetGlobalIndex: number;
 
     if (savedPositionRef.current !== null) {
@@ -206,6 +210,7 @@ export default function TestQuestions() {
       targetGlobalIndex = candidate ?? flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
       savedPositionRef.current = null;
     } else {
+      // Buscar primeira pergunta não respondida
       const firstUnanswered = flattenedVisibleQuestions.find(index => answers[index] === -1);
       targetGlobalIndex = firstUnanswered ?? flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
     }
