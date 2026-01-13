@@ -12,7 +12,7 @@ export const APP_TITLE = hasText(rawAppTitle) ? rawAppTitle.trim() : "App";
 
 export const APP_LOGO = hasText(rawAppLogo)
   ? rawAppLogo.trim()
-  : "/controlfin-logo.png";
+  : "/logo.png";
 
 export const ADMIN_LOGIN_PATH = "/admin/login";
 
