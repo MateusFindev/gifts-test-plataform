@@ -163,25 +163,7 @@ export default function TestQuestions() {
     flattenedVisibleQuestions,
   ]);
 
-  // Autosave no banco a cada 30 segundos
-  useEffect(() => {
-    if (testId === null) return;
-
-    const interval = setInterval(() => {
-      const currentAnswersStr = JSON.stringify(answers);
-      
-      // Só salva se houver mudanças
-      if (currentAnswersStr !== lastSavedAnswersRef.current) {
-        saveProgressMutation.mutate({
-          testId,
-          answers,
-        });
-        lastSavedAnswersRef.current = currentAnswersStr;
-      }
-    }, AUTOSAVE_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [testId, answers]);
+  // Removido autosave de 30s - agora salva após cada resposta
 
   useEffect(() => {
     if (maritalStatus !== "married") {
@@ -280,6 +262,14 @@ export default function TestQuestions() {
     const newAnswers = [...answers];
     newAnswers[globalQuestionIndex] = value;
     setAnswers(newAnswers);
+
+    // Salvar no banco imediatamente após cada resposta
+    if (testId !== null) {
+      saveProgressMutation.mutate({
+        testId,
+        answers: newAnswers,
+      });
+    }
 
     // Trigger animação de "drop"
     setJustSelected(true);

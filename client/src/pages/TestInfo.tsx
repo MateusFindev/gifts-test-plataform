@@ -103,7 +103,13 @@ export default function TestInfo() {
 
     // Salvar respostas no localStorage
     const storageKey = `giftTest_${inProgressTest.testId}_answers`;
-    localStorage.setItem(storageKey, JSON.stringify(inProgressTest.selfAnswers));
+    
+    // Se selfAnswers for null/undefined, criar array vazio
+    const answersToSave = Array.isArray(inProgressTest.selfAnswers) && inProgressTest.selfAnswers.length === 180
+      ? inProgressTest.selfAnswers
+      : new Array(180).fill(-1);
+    
+    localStorage.setItem(storageKey, JSON.stringify(answersToSave));
 
     toast.success("Continuando teste anterior...");
     setLocation("/test/questions");
