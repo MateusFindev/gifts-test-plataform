@@ -91,7 +91,7 @@ export default function ExternalLinks() {
                 {copied1 ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 onClick={() => copyToClipboard(token1, 1)}
                 variant="outline"
@@ -140,7 +140,7 @@ export default function ExternalLinks() {
                 {copied2 ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 onClick={() => copyToClipboard(token2, 2)}
                 variant="outline"
@@ -182,7 +182,7 @@ export default function ExternalLinks() {
             </p>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button variant="outline" onClick={() => setLocation("/")} className="flex-1 h-12">
               Voltar ao Início
             </Button>
