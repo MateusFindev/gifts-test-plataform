@@ -821,6 +821,12 @@ export const appRouter = router({
           organization: test.organization,
           manifestGifts: test.manifestGifts,
           latentGifts: test.latentGifts,
+          manifestGiftScores: test.manifestGiftScores,
+          latentGiftScores: test.latentGiftScores,
+          externalToken1: test.externalToken1,
+          externalToken2: test.externalToken2,
+          selfAnswers: test.selfAnswers,
+          maritalStatus: test.maritalStatus,
         }));
       }),
 
