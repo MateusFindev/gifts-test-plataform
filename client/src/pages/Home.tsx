@@ -9,8 +9,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
-      <div className="absolute top-4 left-4">
-          <Button variant="outline" onClick={() => setLocation("/admin/login")}>Painel Administrativo</Button>
+      <div className="absolute top-4 right-4 z-10">
+          <Button variant="outline" size="sm" onClick={() => setLocation("/admin/login")} className="text-xs sm:text-sm">
+            Painel Admin
+          </Button>
         </div>
         <div className="max-w-4xl w-full space-y-8">
         <div className="text-center space-y-4">
