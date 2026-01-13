@@ -212,16 +212,21 @@ export default function TestQuestions() {
 
     let targetGlobalIndex: number;
 
-    if (savedPositionRef.current !== null) {
-      const saved = savedPositionRef.current;
-      const candidate = flattenedVisibleQuestions.find(index => index >= saved);
-      targetGlobalIndex = candidate ?? flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
-      savedPositionRef.current = null;
+    // SEMPRE buscar primeira pergunta não respondida (ignora savedPosition)
+    const firstUnanswered = flattenedVisibleQuestions.find(index => answers[index] === -1);
+    
+    if (firstUnanswered !== undefined) {
+      // Encontrou pergunta não respondida
+      targetGlobalIndex = firstUnanswered;
+      console.log('Abrindo na primeira pergunta não respondida:', firstUnanswered);
     } else {
-      // Buscar primeira pergunta não respondida
-      const firstUnanswered = flattenedVisibleQuestions.find(index => answers[index] === -1);
-      targetGlobalIndex = firstUnanswered ?? flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
+      // Todas respondidas, ir para a última
+      targetGlobalIndex = flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
+      console.log('Todas respondidas, abrindo na última:', targetGlobalIndex);
     }
+    
+    // Limpar savedPositionRef
+    savedPositionRef.current = null;
 
     let targetSection = 0;
     let targetQuestion = 0;
@@ -236,6 +241,9 @@ export default function TestQuestions() {
       return false;
     });
 
+    console.log('Posicionando em: Seção', targetSection, 'Pergunta', targetQuestion, 'Global', targetGlobalIndex);
+    console.log('Answers carregados:', answers.filter(a => a !== -1).length, 'de 180');
+    
     setCurrentSection(targetSection);
     setCurrentQuestion(targetQuestion);
     setHasInitializedPosition(true);
