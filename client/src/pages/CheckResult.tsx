@@ -122,7 +122,7 @@ export default function CheckResult() {
 
   const getExternalLink = (token: string) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/test/external/${token}`;
+    return `${baseUrl}/external/${token}`;
   };
 
   return (
