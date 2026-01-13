@@ -212,17 +212,27 @@ export default function TestQuestions() {
 
     let targetGlobalIndex: number;
 
-    // SEMPRE buscar primeira pergunta não respondida (ignora savedPosition)
-    const firstUnanswered = flattenedVisibleQuestions.find(index => answers[index] === -1);
+    // Verificar se tem posição salva do sessionStorage (quando continua teste)
+    const continueFromQuestion = sessionStorage.getItem("continueFromQuestion");
     
-    if (firstUnanswered !== undefined) {
-      // Encontrou pergunta não respondida
-      targetGlobalIndex = firstUnanswered;
-      console.log('Abrindo na primeira pergunta não respondida:', firstUnanswered);
+    if (continueFromQuestion !== null) {
+      // Usar posição calculada no TestInfo
+      targetGlobalIndex = parseInt(continueFromQuestion);
+      console.log('Continuando da pergunta salva:', targetGlobalIndex);
+      // Limpar para não usar novamente
+      sessionStorage.removeItem("continueFromQuestion");
     } else {
-      // Todas respondidas, ir para a última
-      targetGlobalIndex = flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
-      console.log('Todas respondidas, abrindo na última:', targetGlobalIndex);
+      // Buscar primeira pergunta não respondida
+      const firstUnanswered = flattenedVisibleQuestions.find(index => answers[index] === -1);
+      
+      if (firstUnanswered !== undefined) {
+        targetGlobalIndex = firstUnanswered;
+        console.log('Abrindo na primeira pergunta não respondida:', firstUnanswered);
+      } else {
+        // Todas respondidas, ir para a última
+        targetGlobalIndex = flattenedVisibleQuestions[flattenedVisibleQuestions.length - 1];
+        console.log('Todas respondidas, abrindo na última:', targetGlobalIndex);
+      }
     }
     
     // Limpar savedPositionRef

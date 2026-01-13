@@ -111,6 +111,15 @@ export default function TestInfo() {
     
     localStorage.setItem(storageKey, JSON.stringify(answersToSave));
 
+    // Calcular primeira pergunta não respondida
+    const firstUnansweredIndex = answersToSave.findIndex(answer => answer === -1);
+    const targetIndex = firstUnansweredIndex !== -1 ? firstUnansweredIndex : 0;
+    
+    // Salvar índice da pergunta para abrir
+    sessionStorage.setItem("continueFromQuestion", targetIndex.toString());
+    
+    console.log('Continuando teste. Primeira não respondida:', targetIndex, 'Total respondidas:', answersToSave.filter(a => a !== -1).length);
+
     toast.success("Continuando teste anterior...");
     setLocation("/test/questions");
   };
