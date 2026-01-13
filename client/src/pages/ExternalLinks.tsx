@@ -46,9 +46,9 @@ export default function ExternalLinks() {
   const shareOnWhatsApp = (token: string, linkNumber: number) => {
     const url = getFullUrl(token);
     const message = encodeURIComponent(
-      `Olá! 👋\n\nVocê pode me ajudar respondendo esta avaliação sobre mim? São apenas 30 perguntas e vai me ajudar muito a conhecer melhor meus dons espirituais.\n\n${url}\n\nObrigado! 🙏`
+      `Olá! 👋\n\nVocê pode me ajudar respondendo esta avaliação sobre mim? São apenas 30 perguntas rápidas e vai me ajudar muito!\n\n${url}\n\nObrigado pela ajuda! 🙏`
     );
-    const whatsappUrl = `https://wa.me/?text=${message}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${message}`;
     window.open(whatsappUrl, "_blank");
     toast.success(`Abrindo WhatsApp para compartilhar o Link ${linkNumber}...`);
   };

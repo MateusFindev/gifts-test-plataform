@@ -77,8 +77,8 @@ export default function CheckResult() {
   };
 
   const shareOnWhatsApp = (link: string, evaluatorNumber: number) => {
-    const message = `Olá! 👋\n\nVocê pode me ajudar respondendo esta avaliação? É rápido e importante para mim!\n\n${link}\n\nObrigado! 🙏`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    const message = `Olá! 👋\n\nVocê pode me ajudar respondendo esta avaliação sobre mim? São apenas 30 perguntas rápidas e vai me ajudar muito!\n\n${link}\n\nObrigado pela ajuda! 🙏`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
