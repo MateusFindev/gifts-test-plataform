@@ -469,14 +469,14 @@ export default function TestQuestions() {
         <Card className={`border-2 border-blue-200 transition-all duration-500 ${
           isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"
         }`}>
-          <CardContent className="pt-8 pb-8 space-y-6">
+          <CardContent className="pt-6 pb-6 md:pt-8 md:pb-8 space-y-4 md:space-y-6">
             {/* Frase com resposta substituída */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 min-h-[160px] flex items-center justify-center">
-              <p className="text-xl md:text-2xl text-center leading-relaxed text-gray-800">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 md:p-6 min-h-[120px] md:min-h-[160px] flex items-center justify-center">
+              <p className="text-base md:text-xl lg:text-2xl text-center leading-relaxed text-gray-800">
                 {scale.prefix && <span>{scale.prefix} </span>}
                 {selectedOptionText ? (
                   <span 
-                    className={`font-bold text-white bg-blue-600 px-3 py-1 rounded-md mx-1 inline-block ${
+                    className={`font-bold text-white bg-blue-600 px-2 py-1 md:px-3 rounded-md mx-1 inline-block text-sm md:text-base ${
                       justSelected ? 'animate-[dropIn_0.6s_ease-out]' : ''
                     }`}
                     style={{
@@ -486,7 +486,7 @@ export default function TestQuestions() {
                     {selectedOptionText}
                   </span>
                 ) : (
-                  <span className="font-bold text-blue-600 mx-1 px-2 py-1 border-2 border-dashed border-blue-400 rounded-md inline-block bg-blue-100/50">
+                  <span className="font-bold text-blue-600 mx-1 px-2 py-1 border-2 border-dashed border-blue-400 rounded-md inline-block bg-blue-100/50 text-sm md:text-base">
                     ...
                   </span>
                 )}
@@ -502,7 +502,7 @@ export default function TestQuestions() {
                   key={option.value}
                   onClick={() => handleAnswerSelect(option.value)}
                   disabled={isTransitioning}
-                  className={`w-full p-4 rounded-lg text-left transition-all duration-200 ${
+                  className={`w-full p-3 md:p-4 rounded-lg text-left transition-all duration-200 ${
                     isTransitioning ? "cursor-not-allowed opacity-50" : ""} ${
                     currentAnswer === option.value
                       ? "bg-blue-600 text-white shadow-lg scale-[1.02]"
@@ -521,7 +521,7 @@ export default function TestQuestions() {
                         <div className="w-3 h-3 rounded-full bg-blue-600"></div>
                       )}
                     </div>
-                    <span className="text-base font-medium">{option.label}</span>
+                    <span className="text-sm md:text-base font-medium">{option.label}</span>
                   </div>
                 </button>
               ))}
