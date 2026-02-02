@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { EXTERNAL_ASSESSMENT_QUESTIONS, EXTERNAL_SCALE } from "@shared/testData";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ExternalCompletionDialog } from "@/components/ExternalCompletionDialog";
 
 const TOTAL_QUESTIONS = 30;
 const STORAGE_KEY_PREFIX = "externalAssessment_";
@@ -19,6 +20,7 @@ export default function ExternalAssessment() {
   const [answers, setAnswers] = useState<number[]>(new Array(TOTAL_QUESTIONS).fill(-1));
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
 
   const getByExternalTokenQuery = trpc.giftTest.getByExternalToken.useQuery(
     { token },
@@ -27,9 +29,23 @@ export default function ExternalAssessment() {
 
   const saveExternalAnswersMutation = trpc.giftTest.saveExternalAnswers.useMutation({
     onSuccess: () => {
-      // Limpar localStorage após finalizar
+      // Limpar localStorage e sessionStorage após finalizar
       localStorage.removeItem(`${STORAGE_KEY_PREFIX}${token}_answers`);
       localStorage.removeItem(`${STORAGE_KEY_PREFIX}${token}_question`);
+      sessionStorage.removeItem(`externalToken_${token}`);
+      sessionStorage.removeItem(`externalAssessment_${token}`);
+      
+      // Limpar todo cache relacionado ao token
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes(token)) {
+          localStorage.removeItem(key);
+        }
+      });
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes(token)) {
+          sessionStorage.removeItem(key);
+        }
+      });
       
       toast.success("Avaliação concluída! Obrigado pela sua participação.");
       setLocation("/");
@@ -135,7 +151,15 @@ export default function ExternalAssessment() {
     // Auto-avançar para próxima pergunta após 1500ms (1,5 segundos)
     setTimeout(() => {
       setIsTransitioning(false);
-      if (currentQuestion < TOTAL_QUESTIONS - 1) {
+      
+      // Verificar se é a última pergunta e todas foram respondidas
+      const isLastQuestion = currentQuestion === TOTAL_QUESTIONS - 1;
+      const allAnswered = newAnswers.every((a) => a !== -1);
+      
+      if (isLastQuestion && allAnswered) {
+        // Mostrar modal de conclusão
+        setShowCompletionDialog(true);
+      } else if (currentQuestion < TOTAL_QUESTIONS - 1) {
         setCurrentQuestion(currentQuestion + 1);
       }
     }, 1500);
@@ -169,6 +193,11 @@ export default function ExternalAssessment() {
       token,
       answers,
     });
+  };
+
+  const handleCompletionContinue = () => {
+    setShowCompletionDialog(false);
+    handleFinish();
   };
 
   const isLastQuestion = currentQuestion === TOTAL_QUESTIONS - 1;
@@ -323,6 +352,13 @@ export default function ExternalAssessment() {
           </p>
         </div>
       </div>
+
+      {/* Modal de conclusão */}
+      <ExternalCompletionDialog
+        open={showCompletionDialog}
+        assesseeName={assesseeName}
+        onContinue={handleCompletionContinue}
+      />
 
       {/* Keyframes CSS para animação de drop */}
       <style>{`
