@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { CheckCircle2 } from "lucide-react";
+import { useConfetti } from "@/hooks/useConfetti";
 
 interface CompletionDialogProps {
   open: boolean;
@@ -15,6 +17,15 @@ interface CompletionDialogProps {
 }
 
 export function CompletionDialog({ open, onContinue }: CompletionDialogProps) {
+  const { celebrate } = useConfetti();
+
+  // Disparar confetti quando o modal abrir
+  useEffect(() => {
+    if (open) {
+      celebrate();
+    }
+  }, [open, celebrate]);
+
   return (
     <AlertDialog open={open}>
       <AlertDialogContent className="max-w-md">

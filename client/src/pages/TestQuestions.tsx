@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { SELF_ASSESSMENT_QUESTIONS, SECTION_SCALES } from "@shared/testData";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { CompletionDialog } from "@/components/CompletionDialog";
+import { SectionProgressBar } from "@/components/test/SectionProgressBar";
 
 const QUESTIONS_PER_SECTION = 30;
 const TOTAL_SECTIONS = 6;
@@ -439,6 +440,16 @@ export default function TestQuestions() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* Barra de progresso das seções */}
+        <Card>
+          <CardHeader>
+            <SectionProgressBar 
+              currentSection={currentSection} 
+              totalSections={TOTAL_SECTIONS} 
+            />
+          </CardHeader>
+        </Card>
+
         {/* Header com progresso */}
         <Card>
           <CardHeader>
