@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { SELF_ASSESSMENT_QUESTIONS, SECTION_SCALES } from "@shared/testData";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { CompletionDialog } from "@/components/CompletionDialog";
-import { SectionProgressBar } from "@/components/test/SectionProgressBar";
+import { SectionTransition } from "@/components/test/SectionTransition";
 
 const QUESTIONS_PER_SECTION = 30;
 const TOTAL_SECTIONS = 6;
@@ -30,6 +30,8 @@ export default function TestQuestions() {
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [answersLoaded, setAnswersLoaded] = useState(false);
+  const [showSectionTransition, setShowSectionTransition] = useState(false);
+  const [previousSection, setPreviousSection] = useState(0);
   const savedPositionRef = useRef<number | null>(null);
   const lastSavedAnswersRef = useRef<string>("");
 
@@ -333,6 +335,9 @@ export default function TestQuestions() {
       } else if (hasQuestionsInSection && !isLastQuestionInSection) {
         setCurrentQuestion(currentQuestion + 1);
       } else if (currentSection < TOTAL_SECTIONS - 1) {
+        // Mostrar transição de seção
+        setPreviousSection(currentSection);
+        setShowSectionTransition(true);
         setCurrentSection(currentSection + 1);
         setCurrentQuestion(0);
         window.scrollTo(0, 0);
@@ -440,16 +445,6 @@ export default function TestQuestions() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Barra de progresso das seções */}
-        <Card>
-          <CardHeader>
-            <SectionProgressBar 
-              currentSection={currentSection} 
-              totalSections={TOTAL_SECTIONS} 
-            />
-          </CardHeader>
-        </Card>
-
         {/* Header com progresso */}
         <Card>
           <CardHeader>
@@ -581,6 +576,15 @@ export default function TestQuestions() {
           </p>
         </div>
       </div>
+
+      {/* Transição de seção */}
+      {showSectionTransition && (
+        <SectionTransition
+          currentSection={currentSection}
+          totalSections={TOTAL_SECTIONS}
+          onComplete={() => setShowSectionTransition(false)}
+        />
+      )}
 
       {/* Modal de conclusão */}
       <CompletionDialog
