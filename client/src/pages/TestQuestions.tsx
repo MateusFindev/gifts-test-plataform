@@ -18,6 +18,25 @@ const EMPTY_SET = new Set<number>();
 const STORAGE_KEY_PREFIX = "giftTest_";
 const AUTOSAVE_INTERVAL = 30000; // 30 segundos
 
+// Função para carregar maritalStatus de forma síncrona
+function getInitialMaritalStatus(): "single" | "married" {
+  const storedTestId = sessionStorage.getItem("currentTestId");
+  if (!storedTestId) return "single";
+  
+  const savedMaritalStatus = localStorage.getItem(`${STORAGE_KEY_PREFIX}${storedTestId}_maritalStatus`);
+  if (savedMaritalStatus === "married" || savedMaritalStatus === "single") {
+    return savedMaritalStatus;
+  }
+  
+  // Fallback para sessionStorage
+  const storedStatus = sessionStorage.getItem("testMaritalStatus");
+  if (storedStatus === "married" || storedStatus === "single") {
+    return storedStatus;
+  }
+  
+  return "single";
+}
+
 export default function TestQuestions() {
   const [, setLocation] = useLocation();
   const [currentSection, setCurrentSection] = useState(0);
@@ -26,7 +45,7 @@ export default function TestQuestions() {
   const [testId, setTestId] = useState<number | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
-  const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
+  const [maritalStatus, setMaritalStatus] = useState<"single" | "married">(getInitialMaritalStatus);
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [answersLoaded, setAnswersLoaded] = useState(false);
@@ -98,16 +117,12 @@ export default function TestQuestions() {
     const id = parseInt(storedTestId);
     setTestId(id);
 
-    // Carregar estado civil do localStorage (prioridade sobre sessionStorage)
+    // maritalStatus já foi carregado de forma síncrona no useState inicial
+    // Apenas garantir que está salvo no localStorage se veio do sessionStorage
     const savedMaritalStatus = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_maritalStatus`);
-    if (savedMaritalStatus === "married" || savedMaritalStatus === "single") {
-      setMaritalStatus(savedMaritalStatus as "single" | "married");
-    } else {
-      // Fallback para sessionStorage (compatibilidade)
+    if (!savedMaritalStatus) {
       const storedStatus = sessionStorage.getItem("testMaritalStatus");
       if (storedStatus === "married" || storedStatus === "single") {
-        setMaritalStatus(storedStatus as "single" | "married");
-        // Salvar no localStorage para persistência
         localStorage.setItem(`${STORAGE_KEY_PREFIX}${id}_maritalStatus`, storedStatus);
       }
     }
