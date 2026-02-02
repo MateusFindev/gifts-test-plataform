@@ -14,14 +14,14 @@ export function SectionTransition({ currentSection, totalSections, onComplete }:
     // Mostrar a transição
     setShow(true);
 
-    // Esconder após 1.5 segundos
+    // Esconder após 2.5 segundos
     const timer = setTimeout(() => {
       setShow(false);
-      // Chamar callback após animação de saída (300ms)
+      // Chamar callback após animação de saída (400ms)
       setTimeout(() => {
         onComplete?.();
-      }, 300);
-    }, 1500);
+      }, 400);
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, [currentSection, onComplete]);
@@ -30,10 +30,10 @@ export function SectionTransition({ currentSection, totalSections, onComplete }:
     <AnimatePresence>
       {show && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.8, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.8, y: 20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
         >
           <motion.div
