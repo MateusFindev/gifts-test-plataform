@@ -716,6 +716,7 @@ export const appRouter = router({
           name: test.name,
           alreadyAnswered,
           tokenNumber: isToken1 ? 1 : 2,
+          maritalStatus: test.maritalStatus,
         };
       }),
 

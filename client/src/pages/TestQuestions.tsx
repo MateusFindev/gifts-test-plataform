@@ -88,11 +88,6 @@ export default function TestQuestions() {
 
   // Carregar progresso do localStorage e banco
   useEffect(() => {
-    const storedStatus = sessionStorage.getItem("testMaritalStatus");
-    if (storedStatus === "married" || storedStatus === "single") {
-      setMaritalStatus(storedStatus);
-    }
-
     const storedTestId = sessionStorage.getItem("currentTestId");
     if (!storedTestId) {
       toast.error("Teste não encontrado. Redirecionando...");
@@ -102,6 +97,20 @@ export default function TestQuestions() {
 
     const id = parseInt(storedTestId);
     setTestId(id);
+
+    // Carregar estado civil do localStorage (prioridade sobre sessionStorage)
+    const savedMaritalStatus = localStorage.getItem(`${STORAGE_KEY_PREFIX}${id}_maritalStatus`);
+    if (savedMaritalStatus === "married" || savedMaritalStatus === "single") {
+      setMaritalStatus(savedMaritalStatus as "single" | "married");
+    } else {
+      // Fallback para sessionStorage (compatibilidade)
+      const storedStatus = sessionStorage.getItem("testMaritalStatus");
+      if (storedStatus === "married" || storedStatus === "single") {
+        setMaritalStatus(storedStatus as "single" | "married");
+        // Salvar no localStorage para persistência
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${id}_maritalStatus`, storedStatus);
+      }
+    }
 
     // Carregar respostas salvas do localStorage
     const storageKey = `${STORAGE_KEY_PREFIX}${id}_answers`;
@@ -153,6 +162,9 @@ export default function TestQuestions() {
 
     const storageKey = `${STORAGE_KEY_PREFIX}${testId}_answers`;
     localStorage.setItem(storageKey, JSON.stringify(answers));
+    
+    // Salvar estado civil no localStorage
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${testId}_maritalStatus`, maritalStatus);
     const fallbackGlobalIndex =
       globalQuestionIndex ??
       flattenedVisibleQuestions.find(index => answers[index] === -1) ??
@@ -171,6 +183,7 @@ export default function TestQuestions() {
     currentQuestion,
     globalQuestionIndex,
     flattenedVisibleQuestions,
+    maritalStatus,
   ]);
 
   // Removido autosave de 30s - agora salva após cada resposta
@@ -279,6 +292,7 @@ export default function TestQuestions() {
         localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_section`);
         localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_question`);
         localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_globalIndex`);
+        localStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}_maritalStatus`);
       }
 
       toast.success("Respostas salvas com sucesso!");

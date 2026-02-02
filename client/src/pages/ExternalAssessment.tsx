@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -11,6 +11,7 @@ import { ExternalCompletionDialog } from "@/components/ExternalCompletionDialog"
 
 const TOTAL_QUESTIONS = 30;
 const STORAGE_KEY_PREFIX = "externalAssessment_";
+const CELIBACY_QUESTION_INDEX = 2; // Pergunta sobre permanecer solteiro
 
 export default function ExternalAssessment() {
   const [, params] = useRoute("/external/:token");
@@ -21,6 +22,7 @@ export default function ExternalAssessment() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
 
   const getByExternalTokenQuery = trpc.giftTest.getByExternalToken.useQuery(
     { token },
@@ -84,6 +86,13 @@ export default function ExternalAssessment() {
     }
   }, [answers, token, currentQuestion]);
 
+  // Carregar estado civil do backend
+  useEffect(() => {
+    if (getByExternalTokenQuery.data?.maritalStatus) {
+      setMaritalStatus(getByExternalTokenQuery.data.maritalStatus as "single" | "married");
+    }
+  }, [getByExternalTokenQuery.data]);
+
   useEffect(() => {
     if (getByExternalTokenQuery.isError) {
       toast.error("Link inválido ou expirado");
@@ -131,14 +140,26 @@ export default function ExternalAssessment() {
   }
 
   const { name: assesseeName } = getByExternalTokenQuery.data;
-  const questionText = EXTERNAL_ASSESSMENT_QUESTIONS[currentQuestion];
+  
+  // Filtrar perguntas visíveis (remover celibato se casado)
+  const visibleQuestionIndexes = useMemo(() => {
+    const allIndexes = Array.from({ length: TOTAL_QUESTIONS }, (_, i) => i);
+    if (maritalStatus === "married") {
+      return allIndexes.filter(i => i !== CELIBACY_QUESTION_INDEX);
+    }
+    return allIndexes;
+  }, [maritalStatus]);
+
+  const totalVisibleQuestions = visibleQuestionIndexes.length;
+  const currentGlobalIndex = visibleQuestionIndexes[currentQuestion];
+  const questionText = EXTERNAL_ASSESSMENT_QUESTIONS[currentGlobalIndex];
   const scale = EXTERNAL_SCALE;
-  const currentAnswer = answers[currentQuestion];
-  const totalProgress = answers.filter((a) => a !== -1).length;
+  const currentAnswer = answers[currentGlobalIndex];
+  const totalProgress = visibleQuestionIndexes.filter(i => answers[i] !== -1).length;
 
   const handleAnswerSelect = (value: number) => {
     const newAnswers = [...answers];
-    newAnswers[currentQuestion] = value;
+    newAnswers[currentGlobalIndex] = value;
     setAnswers(newAnswers);
 
     // Trigger animação de "drop"
@@ -153,13 +174,13 @@ export default function ExternalAssessment() {
       setIsTransitioning(false);
       
       // Verificar se é a última pergunta e todas foram respondidas
-      const isLastQuestion = currentQuestion === TOTAL_QUESTIONS - 1;
-      const allAnswered = newAnswers.every((a) => a !== -1);
+      const isLastQuestion = currentQuestion === totalVisibleQuestions - 1;
+      const allAnswered = visibleQuestionIndexes.every(i => newAnswers[i] !== -1);
       
       if (isLastQuestion && allAnswered) {
         // Mostrar modal de conclusão
         setShowCompletionDialog(true);
-      } else if (currentQuestion < TOTAL_QUESTIONS - 1) {
+      } else if (currentQuestion < totalVisibleQuestions - 1) {
         setCurrentQuestion(currentQuestion + 1);
       }
     }, 1500);
@@ -177,21 +198,27 @@ export default function ExternalAssessment() {
       return;
     }
 
-    if (currentQuestion < TOTAL_QUESTIONS - 1) {
+    if (currentQuestion < totalVisibleQuestions - 1) {
       setCurrentQuestion(currentQuestion + 1);
     }
   };
 
   const handleFinish = () => {
-    const allAnswered = answers.every((a) => a !== -1);
+    const allAnswered = visibleQuestionIndexes.every(i => answers[i] !== -1);
     if (!allAnswered) {
       toast.error("Por favor, responda todas as perguntas antes de finalizar");
       return;
     }
 
+    // Preencher pergunta de celibato com 0 se for casado
+    const finalAnswers = [...answers];
+    if (maritalStatus === "married") {
+      finalAnswers[CELIBACY_QUESTION_INDEX] = 0;
+    }
+
     saveExternalAnswersMutation.mutate({
       token,
-      answers,
+      answers: finalAnswers,
     });
   };
 
@@ -200,8 +227,8 @@ export default function ExternalAssessment() {
     handleFinish();
   };
 
-  const isLastQuestion = currentQuestion === TOTAL_QUESTIONS - 1;
-  const allAnswered = answers.every((a) => a !== -1);
+  const isLastQuestion = currentQuestion === totalVisibleQuestions - 1;
+  const allAnswered = visibleQuestionIndexes.every(i => answers[i] !== -1);
 
   // Obter o texto da resposta selecionada
   const selectedOptionText = currentAnswer !== -1 
@@ -230,12 +257,12 @@ export default function ExternalAssessment() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-xl">Progresso</CardTitle>
                 <span className="text-sm text-gray-600">
-                  {totalProgress} / {TOTAL_QUESTIONS} respondidas
+                  {totalProgress} / {totalVisibleQuestions} respondidas
                 </span>
               </div>
-              <Progress value={(totalProgress / TOTAL_QUESTIONS) * 100} className="h-2" />
+              <Progress value={(totalProgress / totalVisibleQuestions) * 100} className="h-2" />
               <div className="text-sm text-gray-600 text-center">
-                Pergunta {currentQuestion + 1} de {TOTAL_QUESTIONS}
+                Pergunta {currentQuestion + 1} de {totalVisibleQuestions}
               </div>
             </div>
           </CardHeader>
