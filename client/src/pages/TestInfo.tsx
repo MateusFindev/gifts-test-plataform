@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { ContinueTestDialog } from "@/components/ContinueTestDialog";
+import SelectErrorBoundary from "@/components/SelectErrorBoundary";
 
 export default function TestInfo() {
   const [, setLocation] = useLocation();
@@ -245,42 +246,44 @@ export default function TestInfo() {
 
             <div className="space-y-2">
               <Label htmlFor="organization">Organização *</Label>
-              <Select
-                value={organization || undefined}
-                onValueChange={(value) => {
-                  setOrganization(value);
+              <SelectErrorBoundary>
+                <Select
+                  value={organization || undefined}
+                  onValueChange={(value) => {
+                    setOrganization(value);
 
-                  if (value === "Nenhuma") {
-                    setOrganizationId(null);
-                    return;
-                  }
-
-                  const org = organizations.find(
-                    (o) => o.name === value
-                  );
-
-                  setOrganizationId(org ? org.id : null);
-                }}
-                disabled={organizationsQuery.isLoading || organizationsQuery.isError}
-              >
-                <SelectTrigger id="organization">
-                  <SelectValue
-                    placeholder={
-                      organizationsQuery.isLoading
-                        ? "Carregando organizações..."
-                        : "Selecione uma organização"
+                    if (value === "Nenhuma") {
+                      setOrganizationId(null);
+                      return;
                     }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {organizations.map((org) => (
-                    <SelectItem key={org.id} value={org.name}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="Nenhuma">Nenhuma</SelectItem>
-                </SelectContent>
-              </Select>
+
+                    const org = organizations.find(
+                      (o) => o.name === value
+                    );
+
+                    setOrganizationId(org ? org.id : null);
+                  }}
+                  disabled={organizationsQuery.isLoading || organizationsQuery.isError}
+                >
+                  <SelectTrigger id="organization">
+                    <SelectValue
+                      placeholder={
+                        organizationsQuery.isLoading
+                          ? "Carregando organizações..."
+                          : "Selecione uma organização"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.name}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="Nenhuma">Nenhuma</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SelectErrorBoundary>
               {organizationsQuery.isError && (
                 <p className="text-xs text-red-500 mt-1">
                   Erro ao carregar organizações. Tente novamente mais tarde.
