@@ -274,7 +274,10 @@ export default function AdminDashboard() {
                   >
                     <Checkbox
                       checked={isAllSelected}
-                      onCheckedChange={() => toggleOrganization("all")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleOrganization("all");
+                      }}
                     />
                     <label className="text-sm font-medium cursor-pointer flex-1">
                       Todas as Organizações
@@ -293,7 +296,10 @@ export default function AdminDashboard() {
                       >
                         <Checkbox
                           checked={selectedOrganizationIds.includes(String(org.id))}
-                          onCheckedChange={() => toggleOrganization(String(org.id))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleOrganization(String(org.id));
+                          }}
                         />
                         <label className="text-sm cursor-pointer flex-1">
                           {org.name}
@@ -387,9 +393,9 @@ export default function AdminDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Wrapper do scroll horizontal */}
-              <div className="w-full overflow-x-auto -mx-2 px-2">
-                <div className="min-w-[500px]">
+              {/* Wrapper do scroll horizontal com barra visível */}
+              <div className="w-full overflow-x-auto overflow-y-hidden pb-2" style={{ scrollbarWidth: 'thin' }}>
+                <div style={{ minWidth: `${Math.max(giftBarData.length * 80, 600)}px` }}>
                   <ChartContainer config={chartConfig} className="h-[300px] md:h-[360px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
