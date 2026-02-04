@@ -34,13 +34,10 @@ import {
 import { mockActivityFeed } from "./mock-data";
 import {
   ArrowUpRight,
-  Download,
-  Filter,
   Users,
   CheckCircle,
   Clock,
   Pencil,
-  Sparkles,
   Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -53,9 +50,13 @@ import {
   LineChart,
   XAxis,
   YAxis,
+  ResponsiveContainer,
 } from "recharts";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronDown } from "lucide-react";
 
 const formatDate = (date: string | undefined) => {
   if (!date) return "--";
@@ -90,17 +91,23 @@ const engagementChartConfig = {
 } as const;
 
 export default function AdminDashboard() {
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState("all");
+  // Mudança: agora é um array de IDs de organizações selecionadas
+  const [selectedOrganizationIds, setSelectedOrganizationIds] = useState<string[]>(["all"]);
 
-  const selectedOrgIdNumber =
-    selectedOrganizationId === "all" ? null : Number(selectedOrganizationId);
+  // Se "all" está selecionado, consideramos todas as organizações
+  const isAllSelected = selectedOrganizationIds.includes("all");
+
+  // Converter para números (exceto "all")
+  const selectedOrgIdNumbers = isAllSelected 
+    ? null 
+    : selectedOrganizationIds.map(id => Number(id));
 
   // 3 queries: organizações, overview e resultados
   const orgQuery = trpc.adminOrganization.list.useQuery();
   const dashboardQuery = trpc.adminDashboard.overview.useQuery(
-    selectedOrganizationId === "all"
+    isAllSelected
       ? {}
-      : { organizationId: Number(selectedOrganizationId) },
+      : { organizationId: selectedOrgIdNumbers?.[0] ?? undefined }, // API ainda espera um único ID, mas podemos adaptar
   );
   const resultsQuery = trpc.adminResult.list.useQuery();
 
@@ -121,15 +128,27 @@ export default function AdminDashboard() {
     [organizationsRaw],
   );
 
-  // Organização selecionada (ou null para visão geral)
-  const selectedOrganization = useMemo(() => {
-    if (selectedOrganizationId === "all") return null;
-    return (
-      organizations.find(
-        (org) => String(org.id) === selectedOrganizationId,
-      ) ?? null
-    );
-  }, [organizations, selectedOrganizationId]);
+  // Handler para multi-seleção de organizações
+  const toggleOrganization = (orgId: string) => {
+    if (orgId === "all") {
+      setSelectedOrganizationIds(["all"]);
+      return;
+    }
+
+    setSelectedOrganizationIds(prev => {
+      // Remove "all" se estava selecionado
+      const withoutAll = prev.filter(id => id !== "all");
+      
+      // Toggle da organização
+      if (withoutAll.includes(orgId)) {
+        const newSelection = withoutAll.filter(id => id !== orgId);
+        // Se não sobrou nenhuma, volta para "all"
+        return newSelection.length === 0 ? ["all"] : newSelection;
+      } else {
+        return [...withoutAll, orgId];
+      }
+    });
+  };
 
   // === Métricas baseadas em resultados filtrados por organização ===
 
@@ -137,11 +156,11 @@ export default function AdminDashboard() {
 
   // Resultados considerados para métricas (por org ou todos)
   const filteredResultsForMetrics = useMemo(() => {
-    if (selectedOrgIdNumber === null) return resultsList;
+    if (isAllSelected) return resultsList;
     return resultsList.filter(
-      (r) => r.organizationId === selectedOrgIdNumber,
+      (r) => selectedOrgIdNumbers?.includes(r.organizationId ?? 0),
     );
-  }, [resultsList, selectedOrgIdNumber]);
+  }, [resultsList, selectedOrgIdNumbers, isAllSelected]);
 
   // Quantidade de testes
   const testsCount = filteredResultsForMetrics.length;
@@ -173,27 +192,17 @@ export default function AdminDashboard() {
   const completionRate =
     testsCount === 0 ? 0 : completedCount / testsCount;
 
-  // (Opcional) dados para gráfico de status – se quiser usar depois
-  // const statusChartData = [
-  //   { status: "Concluídos", value: completedCount },
-  //   { status: "Em andamento", value: inProgressCount },
-  //   { status: "Aguardando externos", value: awaitingExternalCount },
-  // ];
-
   // Últimas pessoas avaliadas (tabela) – ainda usa os recentResults do overview
   const filteredRecentResults = useMemo(() => {
     const recents = data?.recentResults ?? [];
-    if (selectedOrganizationId === "all") return recents;
+    if (isAllSelected) return recents;
 
-    const orgName =
-      organizations.find(
-        (org) => String(org.id) === selectedOrganizationId,
-      )?.name ?? null;
+    const selectedOrgNames = organizations
+      .filter(org => selectedOrgIdNumbers?.includes(org.id))
+      .map(org => org.name);
 
-    if (!orgName) return recents;
-
-    return recents.filter((r) => r.organizationName === orgName);
-  }, [data, organizations, selectedOrganizationId]);
+    return recents.filter((r) => selectedOrgNames.includes(r.organizationName ?? ""));
+  }, [data, organizations, selectedOrgIdNumbers, isAllSelected]);
 
   // === Só aqui fazemos os early returns (depois de TODAS as hooks e memos) ===
   if (isLoading) {
@@ -223,55 +232,83 @@ export default function AdminDashboard() {
 
   // Dados para o gráfico de dons
   const giftBarData = data.giftDistribution ?? [];
-  const giftChartWidth = Math.max(giftBarData.length * 80, 640);
+
+  // Texto do seletor de organizações
+  const getOrganizationSelectorText = () => {
+    if (isAllSelected) return "Todas as Organizações";
+    if (selectedOrganizationIds.length === 1) {
+      const org = organizations.find(o => String(o.id) === selectedOrganizationIds[0]);
+      return org?.name ?? "Selecione organizações";
+    }
+    return `${selectedOrganizationIds.length} organizações selecionadas`;
+  };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 px-4 md:px-0">
         {/* Cabeçalho + filtros */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
               Visão Geral da Organização
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
               Painel de Controle
             </h1>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Select
-              value={selectedOrganizationId}
-              onValueChange={setSelectedOrganizationId}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Todas as Organizações" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Organizações</SelectItem>
-                {organizations.map((org) => (
-                  <SelectItem key={org.id} value={String(org.id)}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filtros
-            </Button>
-            <Button variant="outline" className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar
-            </Button>
-            <Button className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Nova Organização
-            </Button>
+            {/* Seletor de Organizações com Multi-Seleção */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full md:w-64 justify-between">
+                  <span className="truncate">{getOrganizationSelectorText()}</span>
+                  <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0" align="end">
+                <div className="p-2 space-y-1">
+                  {/* Opção "Todas as Organizações" */}
+                  <div
+                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                    onClick={() => toggleOrganization("all")}
+                  >
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={() => toggleOrganization("all")}
+                    />
+                    <label className="text-sm font-medium cursor-pointer flex-1">
+                      Todas as Organizações
+                    </label>
+                  </div>
+                  
+                  <div className="border-t my-1" />
+                  
+                  {/* Lista de organizações */}
+                  <div className="max-h-64 overflow-y-auto">
+                    {organizations.map((org) => (
+                      <div
+                        key={org.id}
+                        className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                        onClick={() => toggleOrganization(String(org.id))}
+                      >
+                        <Checkbox
+                          checked={selectedOrganizationIds.includes(String(org.id))}
+                          onCheckedChange={() => toggleOrganization(String(org.id))}
+                        />
+                        <label className="text-sm cursor-pointer flex-1">
+                          {org.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
         {/* Cards principais */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           {/* Testes Avaliados */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -317,7 +354,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="text-3xl font-bold">{completedCount}</div>
               <p className="text-xs text-muted-foreground">
-                Testes concluídos 100% nesta visão
+                Testes que foram completamente finalizados
               </p>
             </CardContent>
           </Card>
@@ -340,54 +377,56 @@ export default function AdminDashboard() {
         </div>
 
         {/* Gráficos */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           <Card className="col-span-1">
             <CardHeader>
-              <CardTitle>Os Dons Mais Comuns na Sua Organização</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base md:text-lg">Os Dons Mais Comuns na Sua Organização</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 Dons que as pessoas já usam (manifestos) e oportunidades de
                 crescimento (latentes).
               </CardDescription>
             </CardHeader>
             <CardContent>
               {/* Wrapper do scroll horizontal */}
-              <div className="w-full overflow-x-auto">
-                <div style={{ width: giftChartWidth }}>
-                  <ChartContainer config={chartConfig} className="h-[360px] w-full">
-                    <BarChart
-                      data={giftBarData}
-                      barCategoryGap={48}
-                      barGap={12}
-                    >
-                      <CartesianGrid vertical={false} strokeDasharray="4 4" />
-                      <XAxis
-                        dataKey="gift"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        interval={0}
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                      />
-                      <YAxis tickLine={false} axisLine={false} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <ChartLegend content={<ChartLegendContent />} />
-                      <Bar
-                        dataKey="manifest"
-                        name="Dons Manifestos"
-                        fill="#2563eb"
-                        radius={6}
-                        barSize={16}
-                      />
-                      <Bar
-                        dataKey="latent"
-                        name="Dons Latentes"
-                        fill="#22c55e"
-                        radius={6}
-                        barSize={16}
-                      />
-                    </BarChart>
+              <div className="w-full overflow-x-auto -mx-2 px-2">
+                <div className="min-w-[500px]">
+                  <ChartContainer config={chartConfig} className="h-[300px] md:h-[360px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={giftBarData}
+                        margin={{ top: 10, right: 10, left: 0, bottom: 60 }}
+                      >
+                        <CartesianGrid vertical={false} strokeDasharray="4 4" />
+                        <XAxis
+                          dataKey="gift"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                          interval={0}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Bar
+                          dataKey="manifest"
+                          name="Dons Manifestos"
+                          fill="#2563eb"
+                          radius={6}
+                          barSize={16}
+                        />
+                        <Bar
+                          dataKey="latent"
+                          name="Dons Latentes"
+                          fill="#22c55e"
+                          radius={6}
+                          barSize={16}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </ChartContainer>
                 </div>
               </div>
@@ -396,61 +435,73 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Como as Pessoas Estão Usando o Teste</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base md:text-lg">Como as Pessoas Estão Usando o Teste</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 Acompanhe quantos testes foram iniciados e finalizados a cada
                 mês.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6">
               <ChartContainer
                 config={engagementChartConfig}
-                className="h-[320px]"
+                className="h-[300px] md:h-[320px] w-full"
               >
-                <LineChart data={data.engagementTrend ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="started"
-                    stroke="#2563eb"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="completed"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={data.engagementTrend ?? []}
+                    margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="month" 
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Line
+                      type="monotone"
+                      dataKey="started"
+                      stroke="#2563eb"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="completed"
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </ChartContainer>
             </CardContent>
           </Card>
         </div>
 
         {/* Últimas pessoas avaliadas + feed de atividades */}
-        <div className="grid gap-4 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 xl:grid-cols-3">
           <Card className="xl:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Últimas Pessoas Avaliadas</CardTitle>
+              <CardTitle className="text-base md:text-lg">Últimas Pessoas Avaliadas</CardTitle>
               <Button variant="ghost" size="sm" className="gap-2" asChild>
                 <Link href="/admin/results">
                   <ArrowUpRight className="h-4 w-4" />
-                  Ver todos
+                  <span className="hidden sm:inline">Ver todos</span>
                 </Link>
               </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Organização</TableHead>
+                    <TableHead className="hidden sm:table-cell">Organização</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -464,22 +515,23 @@ export default function AdminDashboard() {
                         <TableCell className="font-medium">
                           {result.name}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           {result.organizationName ?? "—"}
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant={statusInfo.variant}
-                            className="gap-1.5 pl-2"
+                            className="gap-1.5 pl-2 text-xs"
                           >
-                            <statusInfo.icon className="h-3.5 w-3.5" />
-                            {statusInfo.text}
+                            <statusInfo.icon className="h-3 w-3" />
+                            <span className="hidden sm:inline">{statusInfo.text}</span>
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" asChild>
                             <Link href={`/admin/results/${result.id}`}>
-                              Ver Resultado
+                              <span className="hidden sm:inline">Ver Resultado</span>
+                              <span className="sm:hidden">Ver</span>
                             </Link>
                           </Button>
                         </TableCell>
@@ -493,14 +545,14 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>O que Aconteceu Recentemente</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base md:text-lg">O que Aconteceu Recentemente</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 Um resumo das últimas atividades na sua organização.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {data.activityFeed && data.activityFeed.length > 0 ? (
-                data.activityFeed.map((activity) => (
+                data.activityFeed.slice(0, 5).map((activity) => (
                   <div
                     key={activity.id}
                     className="flex flex-col gap-1 border-l-2 border-primary/50 pl-3"
