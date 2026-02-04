@@ -1153,7 +1153,30 @@ export const appRouter = router({
     get: adminProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
-        const test = await getGiftTestById(input.id);
+        const db = await getDb();
+        
+        // Buscar teste com JOIN para pegar nome da organização atualizado
+        const [test] = await db
+          .select({
+            id: giftTests.id,
+            name: giftTests.name,
+            email: giftTests.email,
+            organizationId: giftTests.organizationId,
+            organizationName: organizations.name,
+            status: giftTests.status,
+            selfAnswers: giftTests.selfAnswers,
+            externalAnswers1: giftTests.externalAnswers1,
+            externalAnswers2: giftTests.externalAnswers2,
+            externalCompleted1: giftTests.externalCompleted1,
+            externalCompleted2: giftTests.externalCompleted2,
+            manifestGiftScores: giftTests.manifestGiftScores,
+            latentGiftScores: giftTests.latentGiftScores,
+            createdAt: giftTests.createdAt,
+            resultSentAt: giftTests.resultSentAt,
+          })
+          .from(giftTests)
+          .leftJoin(organizations, eq(giftTests.organizationId, organizations.id))
+          .where(eq(giftTests.id, input.id));
 
         if (!test) {
           throw new TRPCError({
@@ -1236,7 +1259,7 @@ export const appRouter = router({
           email: test.email,
           status: test.status,
           organizationId: test.organizationId ?? null,
-          organizationName: test.organization ?? null,
+          organizationName: test.organizationName ?? null,
           createdAt: test.createdAt.toISOString(),
           completedAt: test.resultSentAt
             ? test.resultSentAt.toISOString()

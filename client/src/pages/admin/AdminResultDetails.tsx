@@ -609,7 +609,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                   value={editOrganizationId}
                   onValueChange={setEditOrganizationId}
                 >
-                  <SelectTrigger id="edit-org">
+                  <SelectTrigger id="edit-org" className="w-full">
                     <SelectValue placeholder="Selecione uma organização" />
                   </SelectTrigger>
                   <SelectContent>
