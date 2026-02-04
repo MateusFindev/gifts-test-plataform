@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +59,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronDown } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const formatDate = (date: string | undefined) => {
   if (!date) return "--";
@@ -78,6 +79,8 @@ const engagementChartConfig = {
 } as const;
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  
   // Mudança: agora é um array de IDs de organizações selecionadas
   const [selectedOrganizationIds, setSelectedOrganizationIds] = useState<string[]>(["all"]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -90,8 +93,15 @@ export default function AdminDashboard() {
     ? null 
     : selectedOrganizationIds.map(id => Number(id));
 
+  // Buscar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
+  const myOrgsQuery = trpc.auth.myOrganizations.useQuery();
+  const userOrganizations = myOrgsQuery.data ?? [];
+  
   // 3 queries: organizações, overview e resultados
-  const orgQuery = trpc.adminOrganization.list.useQuery();
+  const orgQuery = trpc.adminOrganization.list.useQuery(
+    undefined,
+    { enabled: user?.role === "SUPER_ADMIN" }
+  );
   const dashboardQuery = trpc.adminDashboard.overview.useQuery(
     isAllSelected
       ? {}
@@ -111,10 +121,18 @@ export default function AdminDashboard() {
   const data = dashboardQuery.data;
   const resultsData = resultsQuery.data;
 
+  // Usar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
   const organizations = useMemo(
-    () => organizationsRaw,
-    [organizationsRaw],
+    () => user?.role === "SUPER_ADMIN" ? organizationsRaw : userOrganizations,
+    [user?.role, organizationsRaw, userOrganizations],
   );
+  
+  // Auto-selecionar se ORG_ADMIN tem apenas 1 organização
+  useEffect(() => {
+    if (user?.role === "ORG_ADMIN" && userOrganizations.length === 1) {
+      setSelectedOrganizationIds([String(userOrganizations[0].id)]);
+    }
+  }, [user?.role, userOrganizations]);
 
   // Handler para multi-seleção de organizações
   const toggleOrganization = (orgId: string) => {
@@ -223,7 +241,12 @@ export default function AdminDashboard() {
 
   // Texto do seletor de organizações
   const getOrganizationSelectorText = () => {
-    if (isAllSelected) return "Todas as Organizações";
+    // Para ORG_ADMIN com múltiplas organizações, "all" significa "todas as minhas organizações"
+    if (isAllSelected) {
+      return user?.role === "ORG_ADMIN" && userOrganizations.length > 1
+        ? "Todas as minhas organizações"
+        : "Todas as Organizações";
+    }
     if (selectedOrganizationIds.length === 1) {
       const org = organizations.find(o => String(o.id) === selectedOrganizationIds[0]);
       return org?.name ?? "Selecione organizações";
@@ -271,7 +294,9 @@ export default function AdminDashboard() {
                       }}
                     />
                     <label className="text-sm font-medium cursor-pointer flex-1">
-                      Todas as Organizações
+                      {user?.role === "ORG_ADMIN" && userOrganizations.length > 1
+                        ? "Todas as minhas organizações"
+                        : "Todas as Organizações"}
                     </label>
                   </div>
                   

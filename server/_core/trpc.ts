@@ -43,3 +43,21 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+// Procedure para SUPER_ADMIN ou ORG_ADMIN
+export const orgAdminProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user || (ctx.user.role !== 'SUPER_ADMIN' && ctx.user.role !== 'ORG_ADMIN')) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado. Apenas administradores podem acessar." });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);

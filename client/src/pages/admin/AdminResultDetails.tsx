@@ -35,6 +35,7 @@ import { trpc } from "@/lib/trpc";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { StatusBadge } from "@/components/StatusBadge";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const formatDate = (date?: string | null) => {
   if (!date) return "--";
@@ -50,6 +51,7 @@ type AdminResultDetailsProps = {
 export default function AdminResultDetails({ params }: AdminResultDetailsProps) {
   const [, setLocation] = useLocation();
   const printRef = useRef<HTMLDivElement | null>(null);
+  const { user } = useAuth();
 
   // Estados para edição
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -654,15 +656,17 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                           Principais dons identificados pelo teste completo
                         </CardDescription>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-2 text-blue-700 hover:text-blue-900 hover:bg-blue-100"
-                        onClick={() => setIsScoreModalOpen(true)}
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Ver pontuação completa</span>
-                      </Button>
+                      {user?.role === "SUPER_ADMIN" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-2 text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+                          onClick={() => setIsScoreModalOpen(true)}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Ver pontuação completa</span>
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
@@ -698,15 +702,17 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                           Dons que podem ser estimulados e desenvolvidos
                         </CardDescription>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-2 text-green-700 hover:text-green-900 hover:bg-green-100"
-                        onClick={() => setIsScoreModalOpen(true)}
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Ver pontuação completa</span>
-                      </Button>
+                      {user?.role === "SUPER_ADMIN" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-2 text-green-700 hover:text-green-900 hover:bg-green-100"
+                          onClick={() => setIsScoreModalOpen(true)}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Ver pontuação completa</span>
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
@@ -963,13 +969,13 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                   // Informações do teste
                   doc.setFontSize(10);
                   doc.setFont('helvetica', 'normal');
-                  doc.text(`Nome: ${result.name}`, 14, 35);
-                  if (result.organization) {
-                    doc.text(`Organização: ${result.organization}`, 14, 41);
+                  doc.text(`Nome: ${result.personName}`, 14, 35);
+                  if (result.organizationName) {
+                    doc.text(`Organização: ${result.organizationName}`, 14, 41);
                   }
-                  doc.text(`Data: ${format(new Date(result.createdAt), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, 14, result.organization ? 47 : 41);
+                  doc.text(`Data: ${format(new Date(result.createdAt), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, 14, result.organizationName ? 47 : 41);
                   
-                  const startY = result.organization ? 55 : 49;
+                  const startY = result.organizationName ? 55 : 49;
                   
                   // Tabela de Dons Manifestos
                   doc.setFontSize(12);
@@ -1027,7 +1033,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                   });
                   
                   // Salvar PDF
-                  const safeName = result.name ? result.name.replace(/\s+/g, '-').toLowerCase() : 'resultado';
+                  const safeName = result.personName ? result.personName.replace(/\s+/g, '-').toLowerCase() : 'resultado';
                   const fileName = `pontuacao-completa-${safeName}.pdf`;
                   doc.save(fileName);
                 }}

@@ -236,7 +236,15 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {menuItems
+                .filter(item => {
+                  // ORG_ADMIN não pode acessar Organizações e Usuários
+                  if (user?.role === "ORG_ADMIN") {
+                    return !["/admin/organizations", "/admin/users"].includes(item.path);
+                  }
+                  return true;
+                })
+                .map(item => {
                 const isActive =
                   location === item.path || location.startsWith(`${item.path}/`);
                 return (

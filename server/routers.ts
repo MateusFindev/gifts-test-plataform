@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { ENV } from "./_core/env";
 import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router, adminProcedure } from "./_core/trpc";
+import { publicProcedure, router, adminProcedure, orgAdminProcedure, protectedProcedure } from "./_core/trpc";
 import {
   createGiftTest,
   getGiftTestById,
@@ -27,7 +27,9 @@ import {
   deleteOrganizationAdmin,
   listAdminResults,
   deleteGiftTestById,
-  getDb
+  getDb,
+  getUserOrganizations,
+  setUserOrganizations
 } from "./db";
 import { calculateGifts, calculateFullGiftRanking } from "./giftCalculation";
 import { sendResultEmail } from "./emailService";
@@ -48,6 +50,24 @@ export const appRouter = router({
   system: systemRouter,
 
   auth: router({
+    // Buscar organizações do usuário logado
+    myOrganizations: protectedProcedure.query(async ({ ctx }) => {
+      const user = ctx.user;
+      
+      // SUPER_ADMIN vê todas as organizações
+      if (user.role === "SUPER_ADMIN") {
+        return await listActiveOrganizations();
+      }
+      
+      // ORG_ADMIN vê apenas suas organizações
+      if (user.role === "ORG_ADMIN") {
+        return await getUserOrganizations(user.id);
+      }
+      
+      // END_USER não tem acesso
+      return [];
+    }),
+
     login: publicProcedure
       .input(
         z.object({
@@ -281,6 +301,27 @@ export const appRouter = router({
         await deleteUserById(input.id);
         return { success: true as const };
       }),
+
+    // Buscar organizações de um usuário específico
+    getUserOrganizations: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const orgs = await getUserOrganizations(input.userId);
+        return orgs;
+      }),
+
+    // Atualizar organizações de um usuário (SUPER_ADMIN apenas)
+    setUserOrganizations: adminProcedure
+      .input(
+        z.object({
+          userId: z.number(),
+          organizationIds: z.array(z.number()),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await setUserOrganizations(input.userId, input.organizationIds);
+        return { success: true as const };
+      }),
   }),
 
   adminOrganization: router({
@@ -363,7 +404,7 @@ export const appRouter = router({
   }),
 
   adminDashboard: router({
-    overview: adminProcedure
+    overview: orgAdminProcedure
       .input(
         z
           .object({
@@ -371,8 +412,16 @@ export const appRouter = router({
           })
           .optional(),
       )
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
         const orgFilterId = input?.organizationId ?? null;
+        const user = ctx.user;
+
+        // Buscar organizações do usuário se for ORG_ADMIN
+        let userOrgIds: number[] = [];
+        if (user.role === "ORG_ADMIN") {
+          const userOrgs = await getUserOrganizations(user.id);
+          userOrgIds = userOrgs.map(o => o.id);
+        }
 
         // Puxa dados básicos em paralelo (globais, sem filtro)
         const [results, orgs, users] = await Promise.all([
@@ -381,37 +430,46 @@ export const appRouter = router({
           listAdminUsers(),
         ]);
 
-        // --- Estatísticas de resultados (globais, se você quiser manter assim) ---
-        const totalResults = results.length;
-        const completedResults = results.filter(
+        // Filtrar dados baseado no role do usuário
+        const filteredResults = user.role === "SUPER_ADMIN" 
+          ? results
+          : results.filter(r => r.organizationId && userOrgIds.includes(r.organizationId));
+        
+        const filteredOrgs = user.role === "SUPER_ADMIN"
+          ? orgs
+          : orgs.filter(o => userOrgIds.includes(o.id));
+
+        // --- Estatísticas de resultados (baseadas nos dados filtrados) ---
+        const totalResults = filteredResults.length;
+        const completedResults = filteredResults.filter(
           (r) => r.status === "completed",
         ).length;
-        const inProgressResults = results.filter(
+        const inProgressResults = filteredResults.filter(
           (r) => r.status === "in_progress",
         ).length;
-        const awaitingExternalResults = results.filter(
+        const awaitingExternalResults = filteredResults.filter(
           (r) => r.status === "awaiting_external",
         ).length;
 
-        // Pessoas distintas (global)
+        // Pessoas distintas (filtradas)
         const distinctRespondentsGlobal = new Set(
-          results
+          filteredResults
             .map((r) => r.email?.trim().toLowerCase())
             .filter(Boolean),
         ).size;
 
         // --- Estatísticas de organizações ---
-        const totalOrganizations = orgs.length;
-        const activeOrganizations = orgs.filter((o) => o.isActive).length;
+        const totalOrganizations = filteredOrgs.length;
+        const activeOrganizations = filteredOrgs.filter((o) => o.isActive).length;
 
-        // --- Estatísticas de usuários ---
-        const totalUsers = users.length;
-        const superAdmins = users.filter((u) => u.role === "SUPER_ADMIN").length;
-        const orgAdmins = users.filter((u) => u.role === "ORG_ADMIN").length;
-        const endUsers = users.filter((u) => u.role === "END_USER").length;
+        // --- Estatísticas de usuários (apenas SUPER_ADMIN vê) ---
+        const totalUsers = user.role === "SUPER_ADMIN" ? users.length : 0;
+        const superAdmins = user.role === "SUPER_ADMIN" ? users.filter((u) => u.role === "SUPER_ADMIN").length : 0;
+        const orgAdmins = user.role === "SUPER_ADMIN" ? users.filter((u) => u.role === "ORG_ADMIN").length : 0;
+        const endUsers = user.role === "SUPER_ADMIN" ? users.filter((u) => u.role === "END_USER").length : 0;
 
         // --- Resultados recentes (pra tabela) ---
-        const recentResults = [...results]
+        const recentResults = [...filteredResults]
           .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
           .slice(0, 20)
           .map((r) => ({
@@ -470,6 +528,11 @@ export const appRouter = router({
               latentGifts: giftTests.latentGifts,
             })
             .from(giftTests);
+        }
+
+        // Filtrar testes por organizações do usuário se for ORG_ADMIN
+        if (user.role === "ORG_ADMIN") {
+          tests = tests.filter(t => t.organizationId && userOrgIds.includes(t.organizationId));
         }
 
         // --- Activity feed (O que aconteceu recentemente) ---
@@ -716,7 +779,6 @@ export const appRouter = router({
           name: test.name,
           alreadyAnswered,
           tokenNumber: isToken1 ? 1 : 2,
-          maritalStatus: test.maritalStatus,
         };
       }),
 
@@ -829,7 +891,6 @@ export const appRouter = router({
           externalCompleted1: test.externalCompleted1,
           externalCompleted2: test.externalCompleted2,
           selfAnswers: test.selfAnswers,
-          maritalStatus: test.maritalStatus,
         }));
       }),
 
@@ -959,7 +1020,7 @@ export const appRouter = router({
 
   adminAnalysis: router({
     
-    byGift: adminProcedure
+    byGift: orgAdminProcedure
       .input(
         z.object({
           organizationId: z.number().nullable().optional(),
@@ -967,7 +1028,15 @@ export const appRouter = router({
           scope: z.enum(["all", "latestPerPerson"]).default("all"),
         }),
       )
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
+        const user = ctx.user;
+        
+        // Buscar organizações do usuário se for ORG_ADMIN
+        let userOrgIds: number[] = [];
+        if (user.role === "ORG_ADMIN") {
+          const userOrgs = await getUserOrganizations(user.id);
+          userOrgIds = userOrgs.map(o => o.id);
+        }
         const db = await getDb();
         if (!db) {
           throw new Error("Database not available");
@@ -1030,6 +1099,11 @@ export const appRouter = router({
               organizations,
               eq(giftTests.organizationId, organizations.id),
             );
+        }
+
+        // Filtrar por organizações do usuário se for ORG_ADMIN
+        if (user.role === "ORG_ADMIN") {
+          tests = tests.filter(t => t.organizationId && userOrgIds.includes(t.organizationId));
         }
 
         const normalizeGifts = (raw: unknown): string[] => {
@@ -1143,10 +1217,19 @@ export const appRouter = router({
 
 
   adminResult: router({
-    list: adminProcedure.query(async () => {
+    list: orgAdminProcedure.query(async ({ ctx }) => {
+      const user = ctx.user;
       const rows = await listAdminResults();
 
-      return rows.map((row) => ({
+      // Filtrar por organizações do usuário se for ORG_ADMIN
+      let filteredRows = rows;
+      if (user.role === "ORG_ADMIN") {
+        const userOrgs = await getUserOrganizations(user.id);
+        const userOrgIds = userOrgs.map(o => o.id);
+        filteredRows = rows.filter(r => r.organizationId && userOrgIds.includes(r.organizationId));
+      }
+
+      return filteredRows.map((row) => ({
         id: row.id,
         name: row.name,
         email: row.email,
@@ -1158,10 +1241,29 @@ export const appRouter = router({
       }));
     }),
 
-    get: adminProcedure
+    get: orgAdminProcedure
       .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
+        const user = ctx.user;
+        
+        // Verificar permissão se for ORG_ADMIN
+        if (user.role === "ORG_ADMIN") {
+          const userOrgs = await getUserOrganizations(user.id);
+          const userOrgIds = userOrgs.map(o => o.id);
+          
+          // Buscar o teste para verificar se pertence a uma das organizações do usuário
+          const testCheck = await getGiftTestById(input.id);
+          if (!testCheck || !testCheck.organizationId || !userOrgIds.includes(testCheck.organizationId)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Você não tem permissão para acessar este resultado",
+            });
+          }
+        }
         const db = await getDb();
+        if (!db) {
+          throw new Error("Database not available");
+        }
         
         // Buscar teste com JOIN para pegar nome da organização atualizado
         const [test] = await db
@@ -1274,13 +1376,14 @@ export const appRouter = router({
             : null,
           manifestGifts,
           latentGifts,
-          allManifestScores,
-          allLatentScores,
+          // ORG_ADMIN não pode ver o ranking completo (30 dons)
+          allManifestScores: user.role === "SUPER_ADMIN" ? allManifestScores : [],
+          allLatentScores: user.role === "SUPER_ADMIN" ? allLatentScores : [],
           externalAssessments,
         };
       }),
 
-    update: adminProcedure
+    update: orgAdminProcedure
       .input(
         z.object({
           id: z.number(),
@@ -1288,8 +1391,27 @@ export const appRouter = router({
           organizationId: z.number().nullable().optional(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        const user = ctx.user;
+        
+        // Verificar permissão se for ORG_ADMIN
+        if (user.role === "ORG_ADMIN") {
+          const userOrgs = await getUserOrganizations(user.id);
+          const userOrgIds = userOrgs.map(o => o.id);
+          
+          const testCheck = await getGiftTestById(input.id);
+          if (!testCheck || !testCheck.organizationId || !userOrgIds.includes(testCheck.organizationId)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Você não tem permissão para editar este resultado",
+            });
+          }
+        }
+        
         const db = await getDb();
+        if (!db) {
+          throw new Error("Database not available");
+        }
         const updateData: any = {};
         
         if (input.personName !== undefined) {
@@ -1308,9 +1430,25 @@ export const appRouter = router({
         return { success: true as const };
       }),
 
-    delete: adminProcedure
+    delete: orgAdminProcedure
       .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        const user = ctx.user;
+        
+        // Verificar permissão se for ORG_ADMIN
+        if (user.role === "ORG_ADMIN") {
+          const userOrgs = await getUserOrganizations(user.id);
+          const userOrgIds = userOrgs.map(o => o.id);
+          
+          const testCheck = await getGiftTestById(input.id);
+          if (!testCheck || !testCheck.organizationId || !userOrgIds.includes(testCheck.organizationId)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Você não tem permissão para deletar este resultado",
+            });
+          }
+        }
+        
         await deleteGiftTestById(input.id);
         return { success: true as const };
       }),

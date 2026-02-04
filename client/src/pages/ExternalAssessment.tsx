@@ -86,12 +86,7 @@ export default function ExternalAssessment() {
     }
   }, [answers, token, currentQuestion]);
 
-  // Carregar estado civil do backend
-  useEffect(() => {
-    if (getByExternalTokenQuery.data?.maritalStatus) {
-      setMaritalStatus(getByExternalTokenQuery.data.maritalStatus as "single" | "married");
-    }
-  }, [getByExternalTokenQuery.data]);
+  // Nota: maritalStatus foi removido do schema
 
   useEffect(() => {
     if (getByExternalTokenQuery.isError) {

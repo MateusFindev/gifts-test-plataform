@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -643,4 +643,91 @@ export async function deleteGiftTestById(id: number): Promise<void> {
     throw new Error("Database not available");
   }
   await db.delete(giftTests).where(eq(giftTests.id, id));
+}
+
+// ==== User Organizations helpers ====
+
+export type UserOrganizationItem = {
+  id: number;
+  name: string;
+};
+
+/**
+ * Busca todas as organizações associadas a um usuário específico
+ */
+export async function getUserOrganizations(userId: number): Promise<UserOrganizationItem[]> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  const rows = await db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+    })
+    .from(userOrganizations)
+    .innerJoin(organizations, eq(userOrganizations.organizationId, organizations.id))
+    .where(eq(userOrganizations.userId, userId));
+
+  return rows;
+}
+
+/**
+ * Adiciona uma organização a um usuário (para SUPER_ADMIN gerenciar)
+ */
+export async function addUserToOrganization(userId: number, organizationId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db.insert(userOrganizations).values({
+    userId,
+    organizationId,
+    role: "ORG_ADMIN", // Por padrão, quando adicionado manualmente
+  });
+}
+
+/**
+ * Remove uma organização de um usuário
+ */
+export async function removeUserFromOrganization(userId: number, organizationId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db
+    .delete(userOrganizations)
+    .where(
+      and(
+        eq(userOrganizations.userId, userId),
+        eq(userOrganizations.organizationId, organizationId)
+      )
+    );
+}
+
+/**
+ * Atualiza as organizações de um usuário (substitui todas)
+ */
+export async function setUserOrganizations(userId: number, organizationIds: number[]): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  // Remove todas as organizações atuais
+  await db.delete(userOrganizations).where(eq(userOrganizations.userId, userId));
+
+  // Adiciona as novas organizações
+  if (organizationIds.length > 0) {
+    await db.insert(userOrganizations).values(
+      organizationIds.map(orgId => ({
+        userId,
+        organizationId: orgId,
+        role: "ORG_ADMIN" as const,
+      }))
+    );
+  }
 }
