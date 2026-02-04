@@ -1189,20 +1189,38 @@ export const appRouter = router({
           percentage: toPercentage(item.score as number, LATENT_MAX_SCORE),
         }));
         
-        // === Ordenar por score para ranking completo ===
-        const allManifestScores = [...manifestScoresArr]
-          .map((item) => ({
-            name: item.gift as string,
-            score: item.score as number,
-            percentage: toPercentage(item.score as number, MANIFEST_MAX_SCORE),
+        // === Lista completa de todos os dons ===
+        const allGifts = [
+          "Organização", "Missionário", "Celibato", "Discernimento", "Evangelismo",
+          "Aconselhamento", "Fé", "Generosidade", "Libertação", "Cura",
+          "Ensino", "Línguas", "Sabedoria", "Pobreza Voluntária", "Habilidade Manual",
+          "Ajuda", "Hospitalidade", "Oração", "Interpretação", "Conhecimento",
+          "Liderança", "Sofrimento", "Misericórdia", "Milagres", "Apóstolo",
+          "Pastoral", "Profecia", "Serviço", "Música", "Criatividade Artística"
+        ];
+        
+        // === Criar mapa de scores para acesso rápido ===
+        const manifestScoreMap = new Map(
+          manifestScoresArr.map((item) => [item.gift as string, item.score as number])
+        );
+        const latentScoreMap = new Map(
+          latentScoresArr.map((item) => [item.gift as string, item.score as number])
+        );
+        
+        // === Ordenar por score para ranking completo (todos os 30 dons) ===
+        const allManifestScores = allGifts
+          .map((giftName) => ({
+            name: giftName,
+            score: manifestScoreMap.get(giftName) ?? 0,
+            percentage: toPercentage(manifestScoreMap.get(giftName) ?? 0, MANIFEST_MAX_SCORE),
           }))
           .sort((a, b) => b.score - a.score);
         
-        const allLatentScores = [...latentScoresArr]
-          .map((item) => ({
-            name: item.gift as string,
-            score: item.score as number,
-            percentage: toPercentage(item.score as number, LATENT_MAX_SCORE),
+        const allLatentScores = allGifts
+          .map((giftName) => ({
+            name: giftName,
+            score: latentScoreMap.get(giftName) ?? 0,
+            percentage: toPercentage(latentScoreMap.get(giftName) ?? 0, LATENT_MAX_SCORE),
           }))
           .sort((a, b) => b.score - a.score);
 
