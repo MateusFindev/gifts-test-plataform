@@ -790,9 +790,9 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                     headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
                     columnStyles: {
                       0: { cellWidth: 10, halign: 'center' },
-                      1: { cellWidth: 80 },
-                      2: { cellWidth: 30, halign: 'center' },
-                      3: { cellWidth: 30, halign: 'center' }
+                      1: { cellWidth: 70 },
+                      2: { cellWidth: 28, halign: 'center' },
+                      3: { cellWidth: 28, halign: 'center' }
                     },
                     margin: { left: 14, right: 14 },
                     styles: { fontSize: 9, cellPadding: 3 }
@@ -818,16 +818,17 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                     headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
                     columnStyles: {
                       0: { cellWidth: 10, halign: 'center' },
-                      1: { cellWidth: 80 },
-                      2: { cellWidth: 30, halign: 'center' },
-                      3: { cellWidth: 30, halign: 'center' }
+                      1: { cellWidth: 70 },
+                      2: { cellWidth: 28, halign: 'center' },
+                      3: { cellWidth: 28, halign: 'center' }
                     },
                     margin: { left: 14, right: 14 },
                     styles: { fontSize: 9, cellPadding: 3 }
                   });
                   
                   // Salvar PDF
-                  const fileName = `pontuacao-completa-${result.name.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+                  const safeName = result.name ? result.name.replace(/\s+/g, '-').toLowerCase() : 'resultado';
+                  const fileName = `pontuacao-completa-${safeName}.pdf`;
                   doc.save(fileName);
                 }}
                 className="w-full sm:w-auto"
