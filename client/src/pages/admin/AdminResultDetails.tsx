@@ -34,7 +34,7 @@ import { ptBR } from "date-fns/locale";
 import { trpc } from "@/lib/trpc";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
 import { StatusBadge } from "@/components/StatusBadge";
 
 const formatDate = (date?: string | null) => {
@@ -188,64 +188,104 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
       const element = printRef.current;
       const fileName = `resultado-${result.personName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
 
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { 
-          scale: 1.5,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          // Ignorar elementos problemáticos
-          ignoreElements: (element: HTMLElement) => {
-            // Ignorar elementos com oklch que podem causar problemas
-            const style = element.style;
-            return (
-              style.backgroundColor?.includes('oklch') ||
-              style.color?.includes('oklch') ||
-              style.borderColor?.includes('oklch')
-            );
-          },
-          onclone: (clonedDoc: Document) => {
-            // Remover todas as variáveis CSS que usam oklch
-            const style = clonedDoc.createElement('style');
-            style.textContent = `
-              * {
-                --background: #ffffff !important;
-                --foreground: #171717 !important;
-                --card: #ffffff !important;
-                --card-foreground: #171717 !important;
-                --popover: #ffffff !important;
-                --popover-foreground: #171717 !important;
-                --primary: #1d4ed8 !important;
-                --primary-foreground: #f0f9ff !important;
-                --secondary: #f5f5f5 !important;
-                --secondary-foreground: #404040 !important;
-                --muted: #f5f5f5 !important;
-                --muted-foreground: #737373 !important;
-                --accent: #f5f5f5 !important;
-                --accent-foreground: #171717 !important;
-                --destructive: #dc2626 !important;
-                --destructive-foreground: #fef2f2 !important;
-                --border: #e5e5e5 !important;
-                --input: #e5e5e5 !important;
-                --ring: #3b82f6 !important;
-              }
-            `;
-            clonedDoc.head.appendChild(style);
-          }
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'portrait',
-          compress: true
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
+      // Capturar como canvas usando html2canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          // Substituir todas as variáveis CSS por valores hex
+          const style = clonedDoc.createElement('style');
+          style.textContent = `
+            :root {
+              --background: 0 0% 100%;
+              --foreground: 0 0% 9%;
+              --card: 0 0% 100%;
+              --card-foreground: 0 0% 9%;
+              --popover: 0 0% 100%;
+              --popover-foreground: 0 0% 9%;
+              --primary: 217 91% 48%;
+              --primary-foreground: 206 100% 97%;
+              --secondary: 0 0% 96%;
+              --secondary-foreground: 0 0% 25%;
+              --muted: 0 0% 96%;
+              --muted-foreground: 0 0% 45%;
+              --accent: 0 0% 96%;
+              --accent-foreground: 0 0% 9%;
+              --destructive: 0 84% 50%;
+              --destructive-foreground: 0 86% 97%;
+              --border: 0 0% 90%;
+              --input: 0 0% 90%;
+              --ring: 217 91% 60%;
+            }
+            * {
+              color: #171717 !important;
+              background-color: transparent !important;
+            }
+            .bg-white { background-color: #ffffff !important; }
+            .bg-gray-50 { background-color: #fafafa !important; }
+            .bg-blue-50 { background-color: #eff6ff !important; }
+            .bg-green-50 { background-color: #f0fdf4 !important; }
+            .bg-yellow-50 { background-color: #fefce8 !important; }
+            .text-blue-600 { color: #2563eb !important; }
+            .text-green-600 { color: #16a34a !important; }
+            .text-yellow-600 { color: #ca8a04 !important; }
+            .text-gray-600 { color: #4b5563 !important; }
+            .text-gray-900 { color: #111827 !important; }
+            .border-blue-200 { border-color: #bfdbfe !important; }
+            .border-green-200 { border-color: #bbf7d0 !important; }
+            .border-gray-200 { border-color: #e5e7eb !important; }
+            svg { fill: currentColor !important; }
+          `;
+          clonedDoc.head.appendChild(style);
 
-      await html2pdf().set(opt).from(element).save();
+          // Remover elementos problemáticos
+          const body = clonedDoc.body;
+          if (body) {
+            // Remover todos os SVGs que podem ter oklch
+            const svgs = body.querySelectorAll('svg');
+            svgs.forEach(svg => {
+              const parent = svg.parentElement;
+              if (parent && !parent.classList.contains('progress-bar')) {
+                svg.remove();
+              }
+            });
+          }
+        }
+      });
+
+      // Criar PDF com jsPDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      // Calcular dimensões
+      const imgWidth = 190; // A4 width - margens
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageHeight = 277; // A4 height - margens
+
+      let heightLeft = imgHeight;
+      let position = 10;
+
+      // Adicionar imagem ao PDF
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Adicionar páginas extras se necessário
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 10;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Salvar PDF
+      pdf.save(fileName);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
       alert('Erro ao gerar PDF. Por favor, tente novamente.');
