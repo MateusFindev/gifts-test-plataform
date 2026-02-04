@@ -107,7 +107,11 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/admin/results")}>
+              <Button onClick={() => {
+                const returnTo = sessionStorage.getItem('returnTo') ?? '/admin/results';
+                sessionStorage.removeItem('returnTo');
+                setLocation(returnTo);
+              }}>
                 Voltar
               </Button>
             </CardContent>
@@ -144,7 +148,11 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/admin/results")}>
+              <Button onClick={() => {
+                const returnTo = sessionStorage.getItem('returnTo') ?? '/admin/results';
+                sessionStorage.removeItem('returnTo');
+                setLocation(returnTo);
+              }}>
                 Voltar
               </Button>
             </CardContent>
@@ -168,7 +176,11 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setLocation("/admin/results")}>
+              <Button onClick={() => {
+                const returnTo = sessionStorage.getItem('returnTo') ?? '/admin/results';
+                sessionStorage.removeItem('returnTo');
+                setLocation(returnTo);
+              }}>
                 Voltar
               </Button>
             </CardContent>
@@ -409,11 +421,17 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
       <div className="space-y-6 px-4 md:px-0">
         {/* Barra superior: navegação + ações */}
         <div className="flex flex-row items-center justify-between gap-2">
-          <Button variant="ghost" className="gap-2 w-fit" asChild>
-            <Link href="/admin/results">
-              <ArrowLeft className="h-4 w-4" />
-              Voltar
-            </Link>
+          <Button 
+            variant="ghost" 
+            className="gap-2 w-fit"
+            onClick={() => {
+              const returnTo = sessionStorage.getItem('returnTo') ?? '/admin/results';
+              sessionStorage.removeItem('returnTo');
+              setLocation(returnTo);
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" className="gap-2" onClick={openEditDialog}>

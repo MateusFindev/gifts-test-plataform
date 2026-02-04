@@ -78,6 +78,8 @@ export default function AdminAnalyses() {
 
 
   const organizationsQuery = trpc.adminOrganization.list.useQuery();
+  const orgOptions = organizationsQuery.data ?? [];
+  
   const analysisQuery = trpc.adminAnalysis.byGift.useQuery(
     {
       giftName: selectedGift,
@@ -172,12 +174,13 @@ export default function AdminAnalyses() {
   };
 
   const handleViewResult = (testId: number) => {
-    // Salvar estado dos filtros antes de navegar
+    // Salvar estado dos filtros e URL de origem
     sessionStorage.setItem('analysisFilters', JSON.stringify({
       selectedGift,
       organizationFilter,
       scope,
     }));
+    sessionStorage.setItem('returnTo', '/admin/analyses');
     setLocation(`/admin/results/${testId}`);
   };
 
@@ -362,12 +365,15 @@ export default function AdminAnalyses() {
         {/* Filtros */}
         <Card>
           <CardHeader>
-            <CardTitle>Filtros</CardTitle>
+            <CardTitle className="text-base md:text-lg">Filtros</CardTitle>
+            <CardDescription className="text-xs md:text-sm">
+              Selecione os critérios para filtrar os resultados
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* Dom */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Dom</label>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Dom</label>
               <Select
                 value={selectedGift}
                 onValueChange={handleGiftChange}
@@ -387,7 +393,7 @@ export default function AdminAnalyses() {
 
             {/* Organização */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Organização</label>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Organização</label>
               <Select
                 value={organizationFilter}
                 onValueChange={handleOrganizationChange}
@@ -408,10 +414,10 @@ export default function AdminAnalyses() {
 
             {/* Escopo */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Escopo</label>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Escopo</label>
               <Select
                 value={scope}
-                onValueChange={handleScopeChange}
+                onValueChange={(value) => handleScopeChange(value as Scope)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
