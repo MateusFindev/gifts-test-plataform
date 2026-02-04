@@ -93,6 +93,7 @@ const engagementChartConfig = {
 export default function AdminDashboard() {
   // Mudança: agora é um array de IDs de organizações selecionadas
   const [selectedOrganizationIds, setSelectedOrganizationIds] = useState<string[]>(["all"]);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   // Se "all" está selecionado, consideramos todas as organizações
   const isAllSelected = selectedOrganizationIds.includes("all");
@@ -258,7 +259,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex flex-wrap gap-3">
             {/* Seletor de Organizações com Multi-Seleção */}
-            <Popover>
+            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full md:w-64 justify-between">
                   <span className="truncate">{getOrganizationSelectorText()}</span>
@@ -270,7 +271,10 @@ export default function AdminDashboard() {
                   {/* Opção "Todas as Organizações" */}
                   <div
                     className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
-                    onClick={() => toggleOrganization("all")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleOrganization("all");
+                    }}
                   >
                     <Checkbox
                       checked={isAllSelected}
@@ -292,7 +296,10 @@ export default function AdminDashboard() {
                       <div
                         key={org.id}
                         className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
-                        onClick={() => toggleOrganization(String(org.id))}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleOrganization(String(org.id));
+                        }}
                       >
                         <Checkbox
                           checked={selectedOrganizationIds.includes(String(org.id))}
