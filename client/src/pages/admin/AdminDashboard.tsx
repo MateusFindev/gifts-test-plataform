@@ -240,7 +240,7 @@ export default function AdminDashboard() {
               Visão Geral da Organização
             </p>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-              Painel de Controle
+              Dashboard
             </h1>
           </div>
           <div className="flex flex-wrap gap-3">

@@ -508,26 +508,25 @@ export default function AdminResults() {
                         <div className="flex justify-end gap-2">
                           <Button 
                             variant="outline" 
-                            size="sm" 
-                            className="gap-2 text-gray-900 hover:text-black hover:bg-gray-50"
+                            size="sm"
                             asChild
                           >
                             <Link href={`/admin/results/${result.id}`}>
-                              <Eye className="h-4 w-4" />
-                              <span className="hidden sm:inline">Ver detalhes</span>
+                              <span className="hidden sm:inline">Ver Resultado</span>
+                              <span className="sm:hidden">Ver</span>
                             </Link>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={deleteMutation.isPending}
                             onClick={(e) => {
                               e.stopPropagation();
                               openDeleteDialog(result);
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 mr-1" />
                             <span className="hidden sm:inline">Excluir</span>
                           </Button>
                         </div>
