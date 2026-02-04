@@ -178,11 +178,61 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
     );
   }
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (typeof window === "undefined" || !printRef.current) return;
 
     const element = printRef.current;
     const fileName = `resultado-${result.personName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+
+    // Criar clone do elemento para não afetar a página
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    clone.style.width = element.offsetWidth + 'px';
+    document.body.appendChild(clone);
+
+    // Substituir cores oklch por cores compatíveis
+    const replaceOklchColors = (el: HTMLElement) => {
+      const computedStyle = window.getComputedStyle(el);
+      
+      // Mapear cores oklch para hex
+      const colorMap: Record<string, string> = {
+        'oklch(1 0 0)': '#ffffff',
+        'oklch(0.985 0 0)': '#fafafa',
+        'oklch(0.967 0.001 286.375)': '#f5f5f5',
+        'oklch(0.92 0.004 286.32)': '#e5e5e5',
+        'oklch(0.235 0.015 65)': '#262626',
+        'oklch(0.552 0.016 285.938)': '#737373',
+      };
+
+      // Substituir background-color
+      const bgColor = computedStyle.backgroundColor;
+      if (bgColor && bgColor.includes('oklch')) {
+        el.style.backgroundColor = colorMap[bgColor] || '#ffffff';
+      }
+
+      // Substituir color
+      const textColor = computedStyle.color;
+      if (textColor && textColor.includes('oklch')) {
+        el.style.color = colorMap[textColor] || '#000000';
+      }
+
+      // Substituir border-color
+      const borderColor = computedStyle.borderColor;
+      if (borderColor && borderColor.includes('oklch')) {
+        el.style.borderColor = colorMap[borderColor] || '#e5e5e5';
+      }
+
+      // Processar filhos recursivamente
+      Array.from(el.children).forEach(child => {
+        if (child instanceof HTMLElement) {
+          replaceOklchColors(child);
+        }
+      });
+    };
+
+    replaceOklchColors(clone);
 
     const opt = {
       margin: [10, 10, 10, 10],
@@ -192,7 +242,14 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc: Document) => {
+          // Garantir que o clone tenha cores compatíveis
+          const clonedElement = clonedDoc.querySelector('[style*="position: absolute"]');
+          if (clonedElement instanceof HTMLElement) {
+            replaceOklchColors(clonedElement);
+          }
+        }
       },
       jsPDF: { 
         unit: 'mm', 
@@ -202,7 +259,12 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
-    html2pdf().set(opt).from(element).save();
+    try {
+      await html2pdf().set(opt).from(clone).save();
+    } finally {
+      // Remover clone do DOM
+      document.body.removeChild(clone);
+    }
   };
 
   const openEditDialog = () => {
