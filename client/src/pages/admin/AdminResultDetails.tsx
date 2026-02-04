@@ -649,7 +649,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
             style={{ width: 'min(95vw, 1600px)' }}
           >
             {/* Header fixo */}
-            <div className="px-6 py-4 border-b bg-white">
+            <div className="px-6 py-4 border-b bg-white rounded-t-lg">
               <DialogTitle className="text-xl md:text-2xl font-bold mb-2">
                 Pontuação Completa dos Dons
               </DialogTitle>
@@ -744,7 +744,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
             </div>
 
             {/* Footer fixo */}
-            <div className="px-6 py-4 border-t bg-gray-50">
+            <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg">
               <Button 
                 variant="outline" 
                 onClick={() => setIsScoreModalOpen(false)}
