@@ -19,6 +19,7 @@ interface AwaitingExternalDialogProps {
   createdAt: Date;
   externalCompleted1: boolean;
   externalCompleted2: boolean;
+  otherAwaitingCount?: number;
 }
 
 export function AwaitingExternalDialog({
@@ -29,6 +30,7 @@ export function AwaitingExternalDialog({
   createdAt,
   externalCompleted1,
   externalCompleted2,
+  otherAwaitingCount = 0,
 }: AwaitingExternalDialogProps) {
   const completedCount = (externalCompleted1 ? 1 : 0) + (externalCompleted2 ? 1 : 0);
   const pendingCount = 2 - completedCount;
@@ -59,6 +61,16 @@ export function AwaitingExternalDialog({
             <p className="text-base mt-3">
               Deseja visualizar o progresso deste teste ou iniciar um novo?
             </p>
+            {otherAwaitingCount > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                <p className="text-sm text-blue-900">
+                  📊 Você também tem <strong>{otherAwaitingCount}</strong> outro{otherAwaitingCount > 1 ? "s" : ""} teste{otherAwaitingCount > 1 ? "s" : ""} aguardando avaliações.
+                </p>
+                <p className="text-xs text-blue-800 mt-1">
+                  Este é o mais recente. Acesse "Consultar Resultados" para ver todos.
+                </p>
+              </div>
+            )}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
               <p className="text-xs text-amber-900">
                 ⚠️ <strong>Importante:</strong> Ao iniciar um novo teste, o teste anterior{" "}

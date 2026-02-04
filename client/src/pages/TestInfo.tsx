@@ -28,6 +28,7 @@ export default function TestInfo() {
     name: string;
     selfAnswers: number[];
     createdAt: Date;
+    otherAwaitingCount?: number;
   } | null>(null);
   const [awaitingExternalTest, setAwaitingExternalTest] = useState<{
     testId: number;
@@ -36,6 +37,7 @@ export default function TestInfo() {
     createdAt: Date;
     externalCompleted1: boolean;
     externalCompleted2: boolean;
+    otherAwaitingCount?: number;
   } | null>(null);
   const [emailToCheck, setEmailToCheck] = useState("");
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -66,6 +68,7 @@ export default function TestInfo() {
           name: data.name!,
           selfAnswers: data.selfAnswers as number[],
           createdAt: new Date(data.createdAt!),
+          otherAwaitingCount: data.otherAwaitingCount || 0,
         });
         setShowContinueDialog(true);
       } else if (data.hasAwaitingExternal) {
@@ -76,6 +79,7 @@ export default function TestInfo() {
           createdAt: new Date(data.createdAt!),
           externalCompleted1: data.externalCompleted1!,
           externalCompleted2: data.externalCompleted2!,
+          otherAwaitingCount: data.otherAwaitingCount || 0,
         });
         setShowAwaitingExternalDialog(true);
       }
@@ -412,6 +416,7 @@ export default function TestInfo() {
           onStartNew={handleStartNewTest}
           testName={inProgressTest.name}
           createdAt={inProgressTest.createdAt}
+          otherAwaitingCount={inProgressTest.otherAwaitingCount}
         />
       )}
 
@@ -424,6 +429,7 @@ export default function TestInfo() {
           createdAt={awaitingExternalTest.createdAt}
           externalCompleted1={awaitingExternalTest.externalCompleted1}
           externalCompleted2={awaitingExternalTest.externalCompleted2}
+          otherAwaitingCount={awaitingExternalTest.otherAwaitingCount}
         />
       )}
     </div>

@@ -17,6 +17,7 @@ interface ContinueTestDialogProps {
   onStartNew: () => void;
   testName: string;
   createdAt: Date;
+  otherAwaitingCount?: number;
 }
 
 export function ContinueTestDialog({
@@ -25,6 +26,7 @@ export function ContinueTestDialog({
   onStartNew,
   testName,
   createdAt,
+  otherAwaitingCount = 0,
 }: ContinueTestDialogProps) {
   return (
     <AlertDialog open={open}>
@@ -39,6 +41,16 @@ export function ContinueTestDialog({
             <p className="text-base mt-2">
               Deseja continuar de onde parou ou iniciar um novo teste do zero?
             </p>
+            {otherAwaitingCount > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                <p className="text-sm text-blue-900">
+                  📊 Você também tem <strong>{otherAwaitingCount}</strong> teste{otherAwaitingCount > 1 ? "s" : ""} aguardando avaliações externas.
+                </p>
+                <p className="text-xs text-blue-800 mt-1">
+                  Acesse "Consultar Resultados" para ver todos os seus testes.
+                </p>
+              </div>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
