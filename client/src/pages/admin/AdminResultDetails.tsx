@@ -215,7 +215,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
 
   const openEditDialog = () => {
     setEditName(result.personName);
-    setEditOrganizationId(result.organizationId ? String(result.organizationId) : "");
+    setEditOrganizationId(result.organizationId ? String(result.organizationId) : "none");
     setIsEditDialogOpen(true);
   };
 
@@ -223,7 +223,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
     updateMutation.mutate({
       id: resultId,
       personName: editName,
-      organizationId: editOrganizationId ? Number(editOrganizationId) : null,
+      organizationId: editOrganizationId && editOrganizationId !== "none" ? Number(editOrganizationId) : null,
     });
   };
 
@@ -437,9 +437,9 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
             <>
               {/* Dons manifestos e latentes */}
               <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-                <Card className="border-green-200">
-                  <CardHeader className="bg-green-50/50">
-                    <CardTitle className="text-green-900">Dons Manifestos</CardTitle>
+                <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white">
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-blue-900">Dons Manifestos</CardTitle>
                     <CardDescription>
                       Principais dons identificados pelo teste completo
                     </CardDescription>
@@ -450,11 +450,16 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                         <div key={gift.name} className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-gray-900">{gift.name}</span>
-                            <span className="text-xs font-semibold text-green-700">
+                            <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                               {gift.percentage}%
                             </span>
                           </div>
-                          <Progress value={gift.percentage} className="h-2" />
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${gift.percentage}%` }}
+                            />
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -463,9 +468,9 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                   </CardContent>
                 </Card>
 
-                <Card className="border-purple-200">
-                  <CardHeader className="bg-purple-50/50">
-                    <CardTitle className="text-purple-900">Dons Latentes</CardTitle>
+                <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-white">
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-green-900">Dons Latentes</CardTitle>
                     <CardDescription>
                       Dons que podem ser estimulados e desenvolvidos
                     </CardDescription>
@@ -476,11 +481,16 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                         <div key={gift.name} className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-gray-900">{gift.name}</span>
-                            <span className="text-xs font-semibold text-purple-700">
+                            <span className="text-sm font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">
                               {gift.percentage}%
                             </span>
                           </div>
-                          <Progress value={gift.percentage} className="h-2" />
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${gift.percentage}%` }}
+                            />
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -569,7 +579,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                     <SelectValue placeholder="Selecione uma organização" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma organização</SelectItem>
+                    <SelectItem value="none">Nenhuma organização</SelectItem>
                     {organizations.map((org) => (
                       <SelectItem key={org.id} value={String(org.id)}>
                         {org.name}

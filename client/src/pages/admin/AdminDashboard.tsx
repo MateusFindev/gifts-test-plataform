@@ -39,6 +39,7 @@ import {
   Clock,
   Pencil,
   Loader2,
+  Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -519,10 +520,10 @@ export default function AdminDashboard() {
                           <StatusBadge status={result.status} className="text-xs" />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm" asChild>
+                          <Button variant="outline" size="sm" className="gap-2" asChild>
                             <Link href={`/admin/results/${result.id}`}>
+                              <Eye className="h-4 w-4" />
                               <span className="hidden sm:inline">Ver Resultado</span>
-                              <span className="sm:hidden">Ver</span>
                             </Link>
                           </Button>
                         </TableCell>

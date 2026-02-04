@@ -509,24 +509,25 @@ export default function AdminResults() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="gap-2"
                             asChild
                           >
                             <Link href={`/admin/results/${result.id}`}>
+                              <Eye className="h-4 w-4" />
                               <span className="hidden sm:inline">Ver Resultado</span>
-                              <span className="sm:hidden">Ver</span>
                             </Link>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={deleteMutation.isPending}
                             onClick={(e) => {
                               e.stopPropagation();
                               openDeleteDialog(result);
                             }}
                           >
-                            <Trash2 className="h-4 w-4 mr-1" />
+                            <Trash2 className="h-4 w-4" />
                             <span className="hidden sm:inline">Excluir</span>
                           </Button>
                         </div>
