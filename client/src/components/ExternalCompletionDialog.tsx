@@ -11,12 +11,13 @@ import {
 import { CheckCircle2 } from "lucide-react";
 import { useConfetti } from "@/hooks/useConfetti";
 
-interface CompletionDialogProps {
+interface ExternalCompletionDialogProps {
   open: boolean;
+  assesseeName: string;
   onContinue: () => void;
 }
 
-export function CompletionDialog({ open, onContinue }: CompletionDialogProps) {
+export function ExternalCompletionDialog({ open, assesseeName, onContinue }: ExternalCompletionDialogProps) {
   const { celebrate } = useConfetti();
 
   // Disparar confetti quando o modal abrir
@@ -34,30 +35,29 @@ export function CompletionDialog({ open, onContinue }: CompletionDialogProps) {
             <CheckCircle2 className="h-16 w-16 text-green-500" />
           </div>
           <AlertDialogTitle className="text-center text-2xl">
-            Parabéns! Autoavaliação Concluída
+            Parabéns! Avaliação Concluída
           </AlertDialogTitle>
           <AlertDialogDescription className="space-y-4 text-center">
             <p className="text-base">
-              Você completou todas as 180 perguntas de autoavaliação! 🎉
+              Você completou todas as 30 perguntas sobre {assesseeName}! 🎉
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
-              <h4 className="font-semibold text-blue-900 mb-2">Próxima Etapa:</h4>
-              <p className="text-sm text-blue-800">
-                Para obter seu resultado completo, você precisará compartilhar o teste com{" "}
-                <strong>2 pessoas que te conhecem bem</strong>. Elas responderão 30 perguntas sobre você.
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-left">
+              <h4 className="font-semibold text-green-900 mb-2">Obrigado pela sua participação!</h4>
+              <p className="text-sm text-green-800">
+                Sua avaliação é muito importante para que {assesseeName} possa conhecer melhor seus dons espirituais.
               </p>
             </div>
             <p className="text-sm text-gray-600">
-              Na próxima tela, você receberá os links para compartilhar com essas pessoas.
+              Suas respostas foram salvas com sucesso.
             </p>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction
             onClick={onContinue}
-            className="w-full bg-blue-600 hover:bg-blue-700"
+            className="w-full bg-green-600 hover:bg-green-700"
           >
-            Continuar para Compartilhamento
+            Finalizar
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

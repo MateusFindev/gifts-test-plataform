@@ -716,6 +716,7 @@ export const appRouter = router({
           name: test.name,
           alreadyAnswered,
           tokenNumber: isToken1 ? 1 : 2,
+          maritalStatus: test.maritalStatus,
         };
       }),
 
@@ -883,22 +884,52 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const tests = await getAllGiftTestsByEmail(input.email);
         
-        // Buscar teste em andamento (não completado)
-        // Aceita testes mesmo sem respostas ainda (selfAnswers pode estar vazio)
+        // Buscar teste em andamento (prioridade máxima)
         const inProgressTest = tests.find(
           test => test.status === "in_progress"
         );
 
-        if (!inProgressTest) {
-          return { hasInProgressTest: false };
+        // Buscar testes aguardando avaliações externas (com pelo menos 1 pendente)
+        const awaitingExternalTests = tests.filter(
+          test => test.status === "awaiting_external" &&
+                  (!test.externalCompleted1 || !test.externalCompleted2)
+        );
+
+        // Contar total de testes aguardando avaliações
+        const totalAwaitingExternal = awaitingExternalTests.length;
+
+        if (!inProgressTest && awaitingExternalTests.length === 0) {
+          return { hasInProgressTest: false, hasAwaitingExternal: false };
         }
 
+        // PRIORIDADE 1: Teste em andamento sempre vem primeiro
+        if (inProgressTest) {
+          return {
+            hasInProgressTest: true,
+            hasAwaitingExternal: false,
+            testId: inProgressTest.id,
+            name: inProgressTest.name,
+            selfAnswers: inProgressTest.selfAnswers,
+            createdAt: inProgressTest.createdAt,
+            otherAwaitingCount: totalAwaitingExternal, // Informar quantos outros testes aguardando
+          };
+        }
+
+        // PRIORIDADE 2: Se não tem in_progress, mostrar awaiting_external mais recente
+        const mostRecentAwaiting = awaitingExternalTests.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )[0];
+
         return {
-          hasInProgressTest: true,
-          testId: inProgressTest.id,
-          name: inProgressTest.name,
-          selfAnswers: inProgressTest.selfAnswers,
-          createdAt: inProgressTest.createdAt,
+          hasInProgressTest: false,
+          hasAwaitingExternal: true,
+          testId: mostRecentAwaiting.id,
+          name: mostRecentAwaiting.name,
+          email: mostRecentAwaiting.email,
+          createdAt: mostRecentAwaiting.createdAt,
+          externalCompleted1: mostRecentAwaiting.externalCompleted1,
+          externalCompleted2: mostRecentAwaiting.externalCompleted2,
+          otherAwaitingCount: totalAwaitingExternal - 1, // Outros testes além deste
         };
       }),
 

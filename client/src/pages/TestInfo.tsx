@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { ContinueTestDialog } from "@/components/ContinueTestDialog";
+import { AwaitingExternalDialog } from "@/components/AwaitingExternalDialog";
 import SelectErrorBoundary from "@/components/SelectErrorBoundary";
 
 export default function TestInfo() {
@@ -21,11 +22,22 @@ export default function TestInfo() {
   const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
   const [organizationId, setOrganizationId] = useState<number | null>(null);
   const [showContinueDialog, setShowContinueDialog] = useState(false);
+  const [showAwaitingExternalDialog, setShowAwaitingExternalDialog] = useState(false);
   const [inProgressTest, setInProgressTest] = useState<{
     testId: number;
     name: string;
     selfAnswers: number[];
     createdAt: Date;
+    otherAwaitingCount?: number;
+  } | null>(null);
+  const [awaitingExternalTest, setAwaitingExternalTest] = useState<{
+    testId: number;
+    name: string;
+    email: string;
+    createdAt: Date;
+    externalCompleted1: boolean;
+    externalCompleted2: boolean;
+    otherAwaitingCount?: number;
   } | null>(null);
   const [emailToCheck, setEmailToCheck] = useState("");
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -56,8 +68,20 @@ export default function TestInfo() {
           name: data.name!,
           selfAnswers: data.selfAnswers as number[],
           createdAt: new Date(data.createdAt!),
+          otherAwaitingCount: data.otherAwaitingCount || 0,
         });
         setShowContinueDialog(true);
+      } else if (data.hasAwaitingExternal) {
+        setAwaitingExternalTest({
+          testId: data.testId!,
+          name: data.name!,
+          email: data.email!,
+          createdAt: new Date(data.createdAt!),
+          externalCompleted1: data.externalCompleted1!,
+          externalCompleted2: data.externalCompleted2!,
+          otherAwaitingCount: data.otherAwaitingCount || 0,
+        });
+        setShowAwaitingExternalDialog(true);
       }
     }
 
@@ -92,6 +116,21 @@ export default function TestInfo() {
     // Verificar se existe teste em andamento
     setEmailToCheck(trimmedEmail);
     setIsCheckingEmail(true);
+  };
+
+  const handleViewProgress = () => {
+    if (!awaitingExternalTest) return;
+
+    // Redirecionar para /check-result com email pré-preenchido
+    setLocation(`/check-result?email=${encodeURIComponent(awaitingExternalTest.email)}`);
+  };
+
+  const handleStartNewFromAwaiting = () => {
+    // Fechar modal e continuar com criação de novo teste
+    // NÃO exclui o teste anterior
+    setShowAwaitingExternalDialog(false);
+    setAwaitingExternalTest(null);
+    toast.info("Iniciando novo teste. O teste anterior não será excluído.");
   };
 
   const handleContinueTest = () => {
@@ -377,6 +416,20 @@ export default function TestInfo() {
           onStartNew={handleStartNewTest}
           testName={inProgressTest.name}
           createdAt={inProgressTest.createdAt}
+          otherAwaitingCount={inProgressTest.otherAwaitingCount}
+        />
+      )}
+
+      {awaitingExternalTest && (
+        <AwaitingExternalDialog
+          open={showAwaitingExternalDialog}
+          onViewProgress={handleViewProgress}
+          onStartNew={handleStartNewFromAwaiting}
+          testName={awaitingExternalTest.name}
+          createdAt={awaitingExternalTest.createdAt}
+          externalCompleted1={awaitingExternalTest.externalCompleted1}
+          externalCompleted2={awaitingExternalTest.externalCompleted2}
+          otherAwaitingCount={awaitingExternalTest.otherAwaitingCount}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,9 +7,11 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { EXTERNAL_ASSESSMENT_QUESTIONS, EXTERNAL_SCALE } from "@shared/testData";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ExternalCompletionDialog } from "@/components/ExternalCompletionDialog";
 
 const TOTAL_QUESTIONS = 30;
 const STORAGE_KEY_PREFIX = "externalAssessment_";
+const CELIBACY_QUESTION_INDEX = 2; // Pergunta sobre permanecer solteiro
 
 export default function ExternalAssessment() {
   const [, params] = useRoute("/external/:token");
@@ -19,6 +21,8 @@ export default function ExternalAssessment() {
   const [answers, setAnswers] = useState<number[]>(new Array(TOTAL_QUESTIONS).fill(-1));
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [maritalStatus, setMaritalStatus] = useState<"single" | "married">("single");
 
   const getByExternalTokenQuery = trpc.giftTest.getByExternalToken.useQuery(
     { token },
@@ -27,9 +31,23 @@ export default function ExternalAssessment() {
 
   const saveExternalAnswersMutation = trpc.giftTest.saveExternalAnswers.useMutation({
     onSuccess: () => {
-      // Limpar localStorage após finalizar
+      // Limpar localStorage e sessionStorage após finalizar
       localStorage.removeItem(`${STORAGE_KEY_PREFIX}${token}_answers`);
       localStorage.removeItem(`${STORAGE_KEY_PREFIX}${token}_question`);
+      sessionStorage.removeItem(`externalToken_${token}`);
+      sessionStorage.removeItem(`externalAssessment_${token}`);
+      
+      // Limpar todo cache relacionado ao token
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes(token)) {
+          localStorage.removeItem(key);
+        }
+      });
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes(token)) {
+          sessionStorage.removeItem(key);
+        }
+      });
       
       toast.success("Avaliação concluída! Obrigado pela sua participação.");
       setLocation("/");
@@ -67,6 +85,13 @@ export default function ExternalAssessment() {
       localStorage.setItem(`${STORAGE_KEY_PREFIX}${token}_question`, currentQuestion.toString());
     }
   }, [answers, token, currentQuestion]);
+
+  // Carregar estado civil do backend
+  useEffect(() => {
+    if (getByExternalTokenQuery.data?.maritalStatus) {
+      setMaritalStatus(getByExternalTokenQuery.data.maritalStatus as "single" | "married");
+    }
+  }, [getByExternalTokenQuery.data]);
 
   useEffect(() => {
     if (getByExternalTokenQuery.isError) {
@@ -115,14 +140,26 @@ export default function ExternalAssessment() {
   }
 
   const { name: assesseeName } = getByExternalTokenQuery.data;
-  const questionText = EXTERNAL_ASSESSMENT_QUESTIONS[currentQuestion];
+  
+  // Filtrar perguntas visíveis (remover celibato se casado)
+  const visibleQuestionIndexes = useMemo(() => {
+    const allIndexes = Array.from({ length: TOTAL_QUESTIONS }, (_, i) => i);
+    if (maritalStatus === "married") {
+      return allIndexes.filter(i => i !== CELIBACY_QUESTION_INDEX);
+    }
+    return allIndexes;
+  }, [maritalStatus]);
+
+  const totalVisibleQuestions = visibleQuestionIndexes.length;
+  const currentGlobalIndex = visibleQuestionIndexes[currentQuestion];
+  const questionText = EXTERNAL_ASSESSMENT_QUESTIONS[currentGlobalIndex];
   const scale = EXTERNAL_SCALE;
-  const currentAnswer = answers[currentQuestion];
-  const totalProgress = answers.filter((a) => a !== -1).length;
+  const currentAnswer = answers[currentGlobalIndex];
+  const totalProgress = visibleQuestionIndexes.filter(i => answers[i] !== -1).length;
 
   const handleAnswerSelect = (value: number) => {
     const newAnswers = [...answers];
-    newAnswers[currentQuestion] = value;
+    newAnswers[currentGlobalIndex] = value;
     setAnswers(newAnswers);
 
     // Trigger animação de "drop"
@@ -135,7 +172,15 @@ export default function ExternalAssessment() {
     // Auto-avançar para próxima pergunta após 1500ms (1,5 segundos)
     setTimeout(() => {
       setIsTransitioning(false);
-      if (currentQuestion < TOTAL_QUESTIONS - 1) {
+      
+      // Verificar se é a última pergunta e todas foram respondidas
+      const isLastQuestion = currentQuestion === totalVisibleQuestions - 1;
+      const allAnswered = visibleQuestionIndexes.every(i => newAnswers[i] !== -1);
+      
+      if (isLastQuestion && allAnswered) {
+        // Mostrar modal de conclusão
+        setShowCompletionDialog(true);
+      } else if (currentQuestion < totalVisibleQuestions - 1) {
         setCurrentQuestion(currentQuestion + 1);
       }
     }, 1500);
@@ -153,26 +198,37 @@ export default function ExternalAssessment() {
       return;
     }
 
-    if (currentQuestion < TOTAL_QUESTIONS - 1) {
+    if (currentQuestion < totalVisibleQuestions - 1) {
       setCurrentQuestion(currentQuestion + 1);
     }
   };
 
   const handleFinish = () => {
-    const allAnswered = answers.every((a) => a !== -1);
+    const allAnswered = visibleQuestionIndexes.every(i => answers[i] !== -1);
     if (!allAnswered) {
       toast.error("Por favor, responda todas as perguntas antes de finalizar");
       return;
     }
 
+    // Preencher pergunta de celibato com 0 se for casado
+    const finalAnswers = [...answers];
+    if (maritalStatus === "married") {
+      finalAnswers[CELIBACY_QUESTION_INDEX] = 0;
+    }
+
     saveExternalAnswersMutation.mutate({
       token,
-      answers,
+      answers: finalAnswers,
     });
   };
 
-  const isLastQuestion = currentQuestion === TOTAL_QUESTIONS - 1;
-  const allAnswered = answers.every((a) => a !== -1);
+  const handleCompletionContinue = () => {
+    setShowCompletionDialog(false);
+    handleFinish();
+  };
+
+  const isLastQuestion = currentQuestion === totalVisibleQuestions - 1;
+  const allAnswered = visibleQuestionIndexes.every(i => answers[i] !== -1);
 
   // Obter o texto da resposta selecionada
   const selectedOptionText = currentAnswer !== -1 
@@ -185,10 +241,10 @@ export default function ExternalAssessment() {
         {/* Header */}
         <Card className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">
+            <CardTitle className="text-xl md:text-2xl text-center">
               Avaliação Externa de {assesseeName}
             </CardTitle>
-            <p className="text-center text-green-50 mt-2">
+            <p className="text-center text-green-50 mt-2 text-sm md:text-base">
               Responda com sinceridade sobre as características que você observa em {assesseeName}
             </p>
           </CardHeader>
@@ -201,12 +257,12 @@ export default function ExternalAssessment() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-xl">Progresso</CardTitle>
                 <span className="text-sm text-gray-600">
-                  {totalProgress} / {TOTAL_QUESTIONS} respondidas
+                  {totalProgress} / {totalVisibleQuestions} respondidas
                 </span>
               </div>
-              <Progress value={(totalProgress / TOTAL_QUESTIONS) * 100} className="h-2" />
+              <Progress value={(totalProgress / totalVisibleQuestions) * 100} className="h-2" />
               <div className="text-sm text-gray-600 text-center">
-                Pergunta {currentQuestion + 1} de {TOTAL_QUESTIONS}
+                Pergunta {currentQuestion + 1} de {totalVisibleQuestions}
               </div>
             </div>
           </CardHeader>
@@ -216,14 +272,14 @@ export default function ExternalAssessment() {
         <Card className={`border-2 border-green-200 transition-all duration-500 ${
           isTransitioning ? "opacity-50 scale-95" : "opacity-100 scale-100"
         }`}>
-          <CardContent className="pt-8 pb-8 space-y-6">
+          <CardContent className="pt-6 pb-6 md:pt-8 md:pb-8 space-y-4 md:space-y-6">
             {/* Frase com resposta substituída */}
-            <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-6 min-h-[160px] flex items-center justify-center">
-              <p className="text-xl md:text-2xl text-center leading-relaxed text-gray-800">
+            <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4 md:p-6 min-h-[120px] md:min-h-[160px] flex items-center justify-center">
+              <p className="text-base md:text-xl lg:text-2xl text-center leading-relaxed text-gray-800">
                 {scale.prefix && <span>{scale.prefix.replace("{name}", assesseeName)} </span>}
                 {selectedOptionText ? (
                   <span 
-                    className={`font-bold text-white bg-green-600 px-3 py-1 rounded-md mx-1 inline-block ${
+                    className={`font-bold text-white bg-green-600 px-2 py-1 md:px-3 rounded-md mx-1 inline-block text-sm md:text-base ${
                       justSelected ? 'animate-[dropIn_0.6s_ease-out]' : ''
                     }`}
                     style={{
@@ -233,7 +289,7 @@ export default function ExternalAssessment() {
                     {selectedOptionText}
                   </span>
                 ) : (
-                  <span className="font-bold text-green-600 mx-1 px-2 py-1 border-2 border-dashed border-green-400 rounded-md inline-block bg-green-100/50">
+                  <span className="font-bold text-green-600 mx-1 px-2 py-1 border-2 border-dashed border-green-400 rounded-md inline-block bg-green-100/50 text-sm md:text-base">
                     ...
                   </span>
                 )}
@@ -249,7 +305,7 @@ export default function ExternalAssessment() {
                   key={option.value}
                   onClick={() => handleAnswerSelect(option.value)}
                   disabled={isTransitioning}
-                  className={`w-full p-4 rounded-lg text-left transition-all duration-200 ${
+                  className={`w-full p-3 md:p-4 rounded-lg text-left transition-all duration-200 ${
                     isTransitioning ? "cursor-not-allowed opacity-50" : ""} ${
                     currentAnswer === option.value
                       ? "bg-green-600 text-white shadow-lg scale-[1.02]"
@@ -268,7 +324,7 @@ export default function ExternalAssessment() {
                         <div className="w-3 h-3 rounded-full bg-green-600"></div>
                       )}
                     </div>
-                    <span className="text-base font-medium">{option.label}</span>
+                    <span className="text-sm md:text-base font-medium">{option.label}</span>
                   </div>
                 </button>
               ))}
@@ -323,6 +379,13 @@ export default function ExternalAssessment() {
           </p>
         </div>
       </div>
+
+      {/* Modal de conclusão */}
+      <ExternalCompletionDialog
+        open={showCompletionDialog}
+        assesseeName={assesseeName}
+        onContinue={handleCompletionContinue}
+      />
 
       {/* Keyframes CSS para animação de drop */}
       <style>{`
