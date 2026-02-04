@@ -1208,6 +1208,7 @@ export const appRouter = router({
           personName: test.name,
           email: test.email,
           status: test.status,
+          organizationId: test.organizationId ?? null,
           organizationName: test.organization ?? null,
           createdAt: test.createdAt.toISOString(),
           completedAt: test.resultSentAt
@@ -1217,6 +1218,34 @@ export const appRouter = router({
           latentGifts,
           externalAssessments,
         };
+      }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          personName: z.string().min(1).optional(),
+          organizationId: z.number().nullable().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        const updateData: any = {};
+        
+        if (input.personName !== undefined) {
+          updateData.name = input.personName;
+        }
+        
+        if (input.organizationId !== undefined) {
+          updateData.organizationId = input.organizationId;
+        }
+        
+        await db
+          .update(giftTests)
+          .set(updateData)
+          .where(eq(giftTests.id, input.id));
+        
+        return { success: true as const };
       }),
 
     delete: adminProcedure

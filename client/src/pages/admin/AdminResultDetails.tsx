@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,32 +10,33 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Download, Mail, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowLeft, Download, Mail, Loader2, Edit2, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { trpc } from "@/lib/trpc";
+import { StatusBadge } from "@/components/StatusBadge";
 
 const formatDate = (date?: string | null) => {
   if (!date) return "--";
   return format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-};
-
-// pontuação máxima teórica dos dons (ajuste/congele ou remova depois se não for usar)
-const MANIFEST_MAX_SCORE = 20;
-const LATENT_MAX_SCORE = 12;
-
-const getPercentage = (score: number, maxScore: number) => {
-  if (!maxScore) return 0;
-  const raw = Math.round((score / maxScore) * 100);
-  return Math.max(0, Math.min(100, raw));
-};
-
-const statusLabels: Record<string, string> = {
-  completed: "Concluído",
-  awaiting_external: "Aguardando avaliações externas",
-  in_progress: "Em andamento",
-  draft: "Rascunho",
 };
 
 type AdminResultDetailsProps = {
@@ -48,11 +49,18 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
   const [, setLocation] = useLocation();
   const printRef = useRef<HTMLDivElement | null>(null);
 
+  // Estados para edição
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editOrganizationId, setEditOrganizationId] = useState<string>("");
+
   // --- pega ID da URL e converte para número ---
   const resultIdParam = params?.resultId ?? "";
   const resultId = Number(resultIdParam);
 
   const isInvalidId = Number.isNaN(resultId) || resultId <= 0;
+
+  const utils = trpc.useUtils();
 
   // --- busca o resultado na API ---
   const {
@@ -66,6 +74,18 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
       enabled: !isInvalidId,
     },
   );
+
+  // Buscar organizações para o select
+  const organizationsQuery = trpc.adminOrganization.list.useQuery();
+  const organizations = organizationsQuery.data ?? [];
+
+  // Mutation para atualizar o resultado
+  const updateMutation = trpc.adminResult.update.useMutation({
+    onSuccess: async () => {
+      await utils.adminResult.get.invalidate({ id: resultId });
+      setIsEditDialogOpen(false);
+    },
+  });
 
   // ID inválido de cara
   if (isInvalidId) {
@@ -193,10 +213,28 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
     printWindow.close();
   };
 
+  const openEditDialog = () => {
+    setEditName(result.personName);
+    setEditOrganizationId(result.organizationId ? String(result.organizationId) : "");
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    updateMutation.mutate({
+      id: resultId,
+      personName: editName,
+      organizationId: editOrganizationId ? Number(editOrganizationId) : null,
+    });
+  };
+
+  const isCompleted = result.status === "completed";
+  const isInProgress = result.status === "in_progress";
+  const isAwaitingExternal = result.status === "awaiting_external";
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Barra superior: navegação + ações (não vai pro PDF) */}
+      <div className="space-y-6 px-4 md:px-0">
+        {/* Barra superior: navegação + ações */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <Button variant="ghost" className="gap-2 w-fit" asChild>
             <Link href="/admin/results">
@@ -204,224 +242,363 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               Voltar
             </Link>
           </Button>
-          <Button variant="outline" className="gap-2" onClick={handleExportPdf}>
-            <Download className="h-4 w-4" />
-            Exportar PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={openEditDialog}>
+              <Edit2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Editar</span>
+            </Button>
+            {isCompleted && (
+              <Button variant="outline" className="gap-2" onClick={handleExportPdf}>
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Exportar PDF</span>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Área que será exportada para PDF */}
         <div ref={printRef} className="space-y-6">
           {/* Cabeçalho do resultado */}
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted-foreground">
-              Resultado #{result.id}
-            </p>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground mb-1">
+                  Resultado #{result.id}
+                </p>
+                <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-1">
                   {result.personName}
                 </h1>
-                <p className="text-sm text-muted-foreground">{result.email}</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  {result.email}
+                </div>
               </div>
-              <Badge variant="secondary">
-                {statusLabels[result.status] ?? result.status}
-              </Badge>
+              <StatusBadge status={result.status} />
             </div>
-          </div>
 
-          {/* Resumo + contato */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Resumo geral</CardTitle>
-                <CardDescription>
-                  Informações consolidadas do respondente
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
+            {/* Informações básicas */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                   <div>
-                    <p className="text-sm text-muted-foreground">
-                      Organização
-                    </p>
-                    <p className="text-lg font-semibold">
-                      {result.organizationName ?? "—"}
+                    <p className="text-xs text-muted-foreground mb-1">Organização</p>
+                    <p className="text-sm font-medium">
+                      {result.organizationName ?? "Não informada"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Criado em</p>
-                    <p className="text-lg font-semibold">
+                    <p className="text-xs text-muted-foreground mb-1">Criado em</p>
+                    <p className="text-sm font-medium">
                       {formatDate(result.createdAt)}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Finalizado em
-                    </p>
-                    <p className="text-lg font-semibold">
-                      {formatDate(result.completedAt)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Contato e acompanhamento</CardTitle>
-                <CardDescription>
-                  Informe ao respondente o próximo passo
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  {result.email}
-                </div>
-                <Button className="w-full" disabled>
-                  Enviar lembrete
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Dons manifestos e latentes lado a lado */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dons manifestos</CardTitle>
-                <CardDescription>
-                  Principais dons identificados pelo teste completo
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {result.manifestGifts.map((gift) => (
-                  <div key={gift.name} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{gift.name}</span>
-                      {/* só o percentual, sem “X / 20” */}
-                      <span className="text-xs text-muted-foreground">
-                        {gift.percentage}%
-                      </span>
-                    </div>
-                    <Progress value={gift.percentage} />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Dons latentes</CardTitle>
-                <CardDescription>
-                  Dons que podem ser estimulados e desenvolvidos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {result.latentGifts.map((gift) => (
-                  <div key={gift.name} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{gift.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {gift.percentage}%
-                      </span>
-                    </div>
-                    <Progress value={gift.percentage} />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Avaliações externas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Avaliações externas</CardTitle>
-              <CardDescription>Status dos convidados</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {result.externalAssessments?.map((assessment: any) => {
-                const isCompleted = assessment.status === "completed";
-
-                const tokenPlaceholder = encodeURIComponent(
-                  `${result.id}-${assessment.name}`.replace(/\s+/g, "-").toLowerCase()
-                );
-                const relativeLink = `/external/${tokenPlaceholder}`;
-                const fullUrl =
-                  typeof window !== "undefined"
-                    ? `${window.location.origin}${relativeLink}`
-                    : relativeLink;
-
-                return (
-                  <div
-                    key={assessment.name}
-                    className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
-                  >
+                  {isCompleted && (
                     <div>
-                      <p className="font-medium">{assessment.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {assessment.relation}
+                      <p className="text-xs text-muted-foreground mb-1">Finalizado em</p>
+                      <p className="text-sm font-medium">
+                        {formatDate(result.completedAt)}
                       </p>
                     </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                    <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={isCompleted ? "default" : "outline"}>
-                          {isCompleted ? "Concluído" : "Pendente"}
-                        </Badge>
-                        {assessment.completedAt && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(assessment.completedAt)}
-                          </span>
+          {/* Status: Em Andamento */}
+          {isInProgress && (
+            <Card className="border-blue-200 bg-blue-50/50">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-blue-900">Teste em Andamento</CardTitle>
+                </div>
+                <CardDescription>
+                  O respondente ainda está preenchendo o teste. Os resultados estarão disponíveis após a conclusão.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Próximos passos:</strong>
+                  </p>
+                  <ul className="text-sm text-blue-700 space-y-1 ml-4 list-disc">
+                    <li>Aguardar o respondente finalizar o teste</li>
+                    <li>Enviar lembrete caso necessário</li>
+                    <li>Os resultados aparecerão automaticamente após conclusão</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Status: Aguardando Avaliações Externas */}
+          {isAwaitingExternal && (
+            <>
+              <Card className="border-yellow-200 bg-yellow-50/50">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <CardTitle className="text-yellow-900">Aguardando Avaliações Externas</CardTitle>
+                  </div>
+                  <CardDescription>
+                    O teste foi concluído pelo respondente, mas ainda faltam avaliações externas para gerar o resultado completo.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Avaliações externas */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Status das Avaliações Externas</CardTitle>
+                  <CardDescription>Acompanhe quem já respondeu e quem ainda está pendente</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {result.externalAssessments?.map((assessment: any) => {
+                    const isAssessmentCompleted = assessment.status === "completed";
+
+                    const tokenPlaceholder = encodeURIComponent(
+                      `${result.id}-${assessment.name}`.replace(/\s+/g, "-").toLowerCase()
+                    );
+                    const relativeLink = `/external/${tokenPlaceholder}`;
+                    const fullUrl =
+                      typeof window !== "undefined"
+                        ? `${window.location.origin}${relativeLink}`
+                        : relativeLink;
+
+                    return (
+                      <div
+                        key={assessment.name}
+                        className="flex flex-col gap-3 rounded-lg border p-4 bg-white"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <p className="font-medium">{assessment.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {assessment.relation}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isAssessmentCompleted ? (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <Badge variant="default" className="bg-green-600">Concluído</Badge>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="h-4 w-4 text-yellow-600" />
+                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pendente</Badge>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {isAssessmentCompleted && assessment.completedAt && (
+                          <p className="text-xs text-muted-foreground">
+                            Concluído em {formatDate(assessment.completedAt)}
+                          </p>
+                        )}
+
+                        {!isAssessmentCompleted && (
+                          <div className="mt-2 space-y-2">
+                            <Label className="text-xs text-muted-foreground">
+                              Link para avaliação
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                className="text-xs flex-1"
+                                readOnly
+                                value={fullUrl}
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (navigator.clipboard?.writeText) {
+                                    navigator.clipboard.writeText(fullUrl);
+                                  }
+                                }}
+                              >
+                                Copiar
+                              </Button>
+                            </div>
+                          </div>
                         )}
                       </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </>
+          )}
 
-                      {!isCompleted && (
-                        <div className="mt-1 space-y-2 w-full md:w-auto">
-                          <p className="text-xs text-muted-foreground">
-                            Link para avaliação
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-2 w-full">
-                            <input
-                              className="flex-1 text-xs border rounded px-2 py-1 bg-muted"
-                              readOnly
-                              value={fullUrl}
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (navigator.clipboard?.writeText) {
-                                  navigator.clipboard.writeText(fullUrl);
-                                }
-                              }}
-                            >
-                              Copiar link
-                            </Button>
+          {/* Status: Concluído - Mostrar resultados completos */}
+          {isCompleted && (
+            <>
+              {/* Dons manifestos e latentes */}
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                <Card className="border-green-200">
+                  <CardHeader className="bg-green-50/50">
+                    <CardTitle className="text-green-900">Dons Manifestos</CardTitle>
+                    <CardDescription>
+                      Principais dons identificados pelo teste completo
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    {result.manifestGifts && result.manifestGifts.length > 0 ? (
+                      result.manifestGifts.map((gift) => (
+                        <div key={gift.name} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-gray-900">{gift.name}</span>
+                            <span className="text-xs font-semibold text-green-700">
+                              {gift.percentage}%
+                            </span>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="px-0 text-xs"
-                            onClick={() => {
-                              console.log(
-                                "Gerar novo link de avaliação externa para",
-                                assessment.name
-                              );
-                            }}
-                          >
-                            Gerar novo link
-                          </Button>
+                          <Progress value={gift.percentage} className="h-2" />
                         </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum dom manifesto identificado.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-purple-200">
+                  <CardHeader className="bg-purple-50/50">
+                    <CardTitle className="text-purple-900">Dons Latentes</CardTitle>
+                    <CardDescription>
+                      Dons que podem ser estimulados e desenvolvidos
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    {result.latentGifts && result.latentGifts.length > 0 ? (
+                      result.latentGifts.map((gift) => (
+                        <div key={gift.name} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-gray-900">{gift.name}</span>
+                            <span className="text-xs font-semibold text-purple-700">
+                              {gift.percentage}%
+                            </span>
+                          </div>
+                          <Progress value={gift.percentage} className="h-2" />
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum dom latente identificado.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Avaliações externas (se houver) */}
+              {result.externalAssessments && result.externalAssessments.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Avaliações Externas</CardTitle>
+                    <CardDescription>Contribuições de pessoas próximas ao respondente</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {result.externalAssessments.map((assessment: any) => {
+                      const isAssessmentCompleted = assessment.status === "completed";
+
+                      return (
+                        <div
+                          key={assessment.name}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border p-4 bg-gray-50"
+                        >
+                          <div>
+                            <p className="font-medium">{assessment.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {assessment.relation}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isAssessmentCompleted ? (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <Badge variant="default" className="bg-green-600">Concluído</Badge>
+                                {assessment.completedAt && (
+                                  <span className="text-xs text-muted-foreground ml-2">
+                                    {formatDate(assessment.completedAt)}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="h-4 w-4 text-gray-400" />
+                                <Badge variant="outline">Não concluído</Badge>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
         </div>
+
+        {/* Dialog de Edição */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Resultado</DialogTitle>
+              <DialogDescription>
+                Atualize as informações do respondente
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Nome</Label>
+                <Input
+                  id="edit-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Nome completo"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-org">Organização</Label>
+                <Select
+                  value={editOrganizationId}
+                  onValueChange={setEditOrganizationId}
+                >
+                  <SelectTrigger id="edit-org">
+                    <SelectValue placeholder="Selecione uma organização" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhuma organização</SelectItem>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={String(org.id)}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={updateMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveEdit}
+                disabled={updateMutation.isPending || !editName.trim()}
+              >
+                {updateMutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                )}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
