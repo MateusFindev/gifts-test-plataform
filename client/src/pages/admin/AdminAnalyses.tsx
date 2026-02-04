@@ -33,6 +33,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Download, Eye, ChevronDown, FileSpreadsheet } from "lucide-react";
+import * as XLSX from 'xlsx';
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { GIFTS } from "@shared/testData";
@@ -95,6 +96,11 @@ export default function AdminAnalyses() {
   const manifest: AnalysisPerson[] = (analysisQuery.data?.manifest ?? []).map(p => ({ ...p, type: "manifest" as const }));
   const latent: AnalysisPerson[] = (analysisQuery.data?.latent ?? []).map(p => ({ ...p, type: "latent" as const }));
   
+  // Debug: verificar se scope está mudando
+  console.log('[AdminAnalyses] scope:', scope);
+  console.log('[AdminAnalyses] manifest count:', manifest.length);
+  console.log('[AdminAnalyses] latent count:', latent.length);
+  
   // Combinar e ordenar por data
   const allResults = [...manifest, ...latent].sort((a, b) => {
     const dateA = new Date(a.completedAt ?? a.createdAt).getTime();
@@ -118,59 +124,37 @@ export default function AdminAnalyses() {
     setScope(value);
   };
 
-  const handleExportCSV = () => {
-    if (!analysisQuery.data || allResults.length === 0) return;
+  const handleExportExcel = () => {
+    if (!analysisQuery.data || (manifest.length === 0 && latent.length === 0)) return;
 
-    const escape = (value: unknown) => {
-      if (value === null || value === undefined) return "";
-      const str = String(value);
-      if (str.includes('"') || str.includes(",") || str.includes("\n")) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-    };
+    // Criar workbook
+    const wb = XLSX.utils.book_new();
 
-    const header = [
-      "Tipo",
-      "Nome",
-      "Email",
-      "Organização",
-      "DataHoraTesteISO",
-      "DataHoraTesteFormatada",
-      "IDTeste",
-    ];
+    // Worksheet 1: Dons Manifestos
+    const manifestData = manifest.map((row) => ({
+      Nome: row.name,
+      Email: row.email,
+      Organização: row.organizationName ?? "-",
+      Data: formatDateTime(row.completedAt ?? row.createdAt),
+      "ID Teste": row.testId,
+    }));
+    const ws1 = XLSX.utils.json_to_sheet(manifestData);
+    XLSX.utils.book_append_sheet(wb, ws1, "Dons Manifestos");
 
-    const csvLines = [
-      header.join(","),
-      ...allResults.map((row) => {
-        const dateIso = row.completedAt ?? row.createdAt;
-        const dateFmt = formatDateTime(dateIso);
-        const tipo = row.type === "manifest" ? "Manifesto" : "Latente";
-        return [
-          escape(tipo),
-          escape(row.name),
-          escape(row.email),
-          escape(row.organizationName ?? ""),
-          escape(dateIso ?? ""),
-          escape(dateFmt),
-          escape(row.testId),
-        ].join(",");
-      }),
-    ];
+    // Worksheet 2: Dons Latentes
+    const latentData = latent.map((row) => ({
+      Nome: row.name,
+      Email: row.email,
+      Organização: row.organizationName ?? "-",
+      Data: formatDateTime(row.completedAt ?? row.createdAt),
+      "ID Teste": row.testId,
+    }));
+    const ws2 = XLSX.utils.json_to_sheet(latentData);
+    XLSX.utils.book_append_sheet(wb, ws2, "Dons Latentes");
 
-    const blob = new Blob([csvLines.join("\n")], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
+    // Gerar e baixar arquivo
     const safeGiftName = selectedGift.replace(/\s+/g, "_");
-    link.download = `analise_${safeGiftName}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    XLSX.writeFile(wb, `analise_${safeGiftName}.xlsx`);
   };
 
   const handleViewResult = (testId: number) => {
@@ -215,12 +199,12 @@ export default function AdminAnalyses() {
       doc.setFontSize(14);
       doc.setTextColor(37, 99, 235); // blue-600
       doc.text("Dons Manifestos", 14, yPos);
-      yPos += 2;
+      yPos += 6;
 
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
       doc.text(`${manifest.length} resultado${manifest.length === 1 ? "" : "s"}`, 14, yPos);
-      yPos += 8;
+      yPos += 10;
 
       autoTable(doc, {
         startY: yPos,
@@ -267,12 +251,12 @@ export default function AdminAnalyses() {
       doc.setFontSize(14);
       doc.setTextColor(22, 163, 74); // green-600
       doc.text("Dons Latentes", 14, yPos);
-      yPos += 2;
+      yPos += 6;
 
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
       doc.text(`${latent.length} resultado${latent.length === 1 ? "" : "s"}`, 14, yPos);
-      yPos += 8;
+      yPos += 10;
 
       autoTable(doc, {
         startY: yPos,
@@ -354,9 +338,9 @@ export default function AdminAnalyses() {
                 <Download className="h-4 w-4 mr-2" />
                 PDF
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportCSV}>
+              <DropdownMenuItem onClick={handleExportExcel}>
                 <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Excel (CSV)
+                Excel
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
