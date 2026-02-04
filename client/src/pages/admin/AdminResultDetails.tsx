@@ -34,6 +34,7 @@ import { ptBR } from "date-fns/locale";
 import { trpc } from "@/lib/trpc";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import html2pdf from 'html2pdf.js';
 import { StatusBadge } from "@/components/StatusBadge";
 
 const formatDate = (date?: string | null) => {
@@ -180,42 +181,28 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
   const handleExportPdf = () => {
     if (typeof window === "undefined" || !printRef.current) return;
 
-    const contentHtml = printRef.current.innerHTML;
+    const element = printRef.current;
+    const fileName = `resultado-${result.personName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
 
-    const printWindow = window.open("", "_blank", "width=1024,height=768");
-    if (!printWindow) return;
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: fileName,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait' 
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
 
-    const doc = printWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-        <head>
-          <meta charSet="utf-8" />
-          <title>Resultado ${result.personName}</title>
-          ${document.head.innerHTML}
-          <style>
-            body {
-              padding: 2rem;
-              background: white;
-            }
-            @media print {
-              body {
-                padding: 0;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${contentHtml}
-        </body>
-      </html>
-    `);
-    doc.close();
-
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    html2pdf().set(opt).from(element).save();
   };
 
   const openEditDialog = () => {
