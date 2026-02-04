@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { Copy, Check, Mail, MessageCircle } from "lucide-react";
+import { ShareLinksTutorialModal } from "@/components/ShareLinksTutorialModal";
+import { ShareLinksInfoBanner } from "@/components/ShareLinksInfoBanner";
 
 export default function ExternalLinks() {
   const [, setLocation] = useLocation();
@@ -12,6 +14,8 @@ export default function ExternalLinks() {
   const [token2, setToken2] = useState("");
   const [copied1, setCopied1] = useState(false);
   const [copied2, setCopied2] = useState(false);
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
+  const [showInfoBanner, setShowInfoBanner] = useState(false);
 
   useEffect(() => {
     const t1 = sessionStorage.getItem("externalToken1");
@@ -25,6 +29,17 @@ export default function ExternalLinks() {
 
     setToken1(t1);
     setToken2(t2);
+
+    // Verificar se é a primeira vez que acessa a página de compartilhamento
+    const hasSeenTutorial = localStorage.getItem("shareLinks_hasSeenTutorial");
+    
+    if (hasSeenTutorial === "true") {
+      // Já viu o tutorial, mostrar apenas banner
+      setShowInfoBanner(true);
+    } else {
+      // Primeira vez, mostrar modal
+      setShowTutorialModal(true);
+    }
   }, [setLocation]);
 
   const getFullUrl = (token: string) => {
@@ -53,6 +68,21 @@ export default function ExternalLinks() {
     toast.success(`Abrindo WhatsApp para compartilhar o Link ${linkNumber}...`);
   };
 
+  const handleCloseTutorial = (dontShowAgain: boolean) => {
+    setShowTutorialModal(false);
+    
+    if (dontShowAgain) {
+      // Salvar preferência no localStorage
+      localStorage.setItem("shareLinks_hasSeenTutorial", "true");
+    } else {
+      // Mostrar banner se não marcou "não mostrar novamente"
+      setShowInfoBanner(true);
+    }
+    
+    // Sempre marcar que já viu o tutorial (para não mostrar modal novamente)
+    localStorage.setItem("shareLinks_hasSeenTutorial", "true");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="max-w-3xl w-full">
@@ -63,6 +93,8 @@ export default function ExternalLinks() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {showInfoBanner && <ShareLinksInfoBanner />}
+          
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
               <strong>Importante:</strong> Escolha pessoas que te conhecem há bastante tempo e podem
@@ -192,6 +224,11 @@ export default function ExternalLinks() {
           </div>
         </CardContent>
       </Card>
+
+      <ShareLinksTutorialModal
+        open={showTutorialModal}
+        onClose={handleCloseTutorial}
+      />
     </div>
   );
 }
