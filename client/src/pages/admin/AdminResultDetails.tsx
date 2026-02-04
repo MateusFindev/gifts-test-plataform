@@ -644,38 +644,39 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
 
         {/* Modal de Pontuação Completa */}
         <Dialog open={isScoreModalOpen} onOpenChange={setIsScoreModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Pontuação Completa dos Dons</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-7xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="text-2xl">Pontuação Completa dos Dons</DialogTitle>
+              <DialogDescription className="text-base">
                 Ranking completo de todos os dons avaliados, ordenados por pontuação
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 py-4">
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 overflow-y-auto px-1" style={{ maxHeight: 'calc(85vh - 180px)' }}>
               {/* Dons Manifestos */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-3 w-3 rounded-full bg-blue-600"></div>
-                  <h3 className="text-lg font-semibold text-blue-900">Dons Manifestos</h3>
+              <div className="space-y-3 pr-2">
+                <div className="flex items-center gap-3 mb-4 sticky top-0 bg-white z-10 pb-2">
+                  <div className="h-4 w-4 rounded-full bg-blue-600"></div>
+                  <h3 className="text-xl font-semibold text-blue-900">Dons Manifestos</h3>
+                  <span className="text-sm text-muted-foreground">(Máx: 20 pontos)</span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {result.allManifestScores && result.allManifestScores.length > 0 ? (
                     result.allManifestScores.map((gift, index) => (
                       <div
                         key={gift.name}
-                        className="flex items-center justify-between p-3 rounded-lg border border-blue-100 bg-blue-50/30 hover:bg-blue-50 transition-colors"
+                        className="flex items-center justify-between p-3.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50/50 to-white hover:from-blue-50 hover:to-blue-50/30 transition-all shadow-sm hover:shadow"
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="flex-shrink-0 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                             {index + 1}
                           </span>
-                          <span className="font-medium text-gray-900">{gift.name}</span>
+                          <span className="font-medium text-gray-900 text-base truncate">{gift.name}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1.5 rounded-full min-w-[60px] text-center">
                             {gift.percentage}%
                           </span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-sm text-muted-foreground font-medium min-w-[50px] text-right">
                             {gift.score}/20
                           </span>
                         </div>
@@ -688,29 +689,30 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               </div>
 
               {/* Dons Latentes */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-3 w-3 rounded-full bg-green-600"></div>
-                  <h3 className="text-lg font-semibold text-green-900">Dons Latentes</h3>
+              <div className="space-y-3 pr-2">
+                <div className="flex items-center gap-3 mb-4 sticky top-0 bg-white z-10 pb-2">
+                  <div className="h-4 w-4 rounded-full bg-green-600"></div>
+                  <h3 className="text-xl font-semibold text-green-900">Dons Latentes</h3>
+                  <span className="text-sm text-muted-foreground">(Máx: 12 pontos)</span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {result.allLatentScores && result.allLatentScores.length > 0 ? (
                     result.allLatentScores.map((gift, index) => (
                       <div
                         key={gift.name}
-                        className="flex items-center justify-between p-3 rounded-lg border border-green-100 bg-green-50/30 hover:bg-green-50 transition-colors"
+                        className="flex items-center justify-between p-3.5 rounded-lg border border-green-200 bg-gradient-to-r from-green-50/50 to-white hover:from-green-50 hover:to-green-50/30 transition-all shadow-sm hover:shadow"
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="flex-shrink-0 w-7 h-7 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                             {index + 1}
                           </span>
-                          <span className="font-medium text-gray-900">{gift.name}</span>
+                          <span className="font-medium text-gray-900 text-base truncate">{gift.name}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1.5 rounded-full min-w-[60px] text-center">
                             {gift.percentage}%
                           </span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-sm text-muted-foreground font-medium min-w-[50px] text-right">
                             {gift.score}/12
                           </span>
                         </div>
@@ -722,8 +724,12 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsScoreModalOpen(false)}>
+            <DialogFooter className="pt-4 mt-2 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsScoreModalOpen(false)}
+                className="w-full sm:w-auto"
+              >
                 Fechar
               </Button>
             </DialogFooter>
