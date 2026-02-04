@@ -644,7 +644,10 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
 
         {/* Modal de Pontuação Completa */}
         <Dialog open={isScoreModalOpen} onOpenChange={setIsScoreModalOpen}>
-          <DialogContent className="w-[95vw] sm:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-none h-[90vh] p-0 gap-0">
+          <DialogContent 
+            className="!max-w-none h-[90vh] p-0 gap-0"
+            style={{ width: 'min(95vw, 1600px)' }}
+          >
             {/* Header fixo */}
             <div className="px-6 py-4 border-b bg-white">
               <DialogTitle className="text-xl md:text-2xl font-bold mb-2">
