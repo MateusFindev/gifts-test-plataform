@@ -240,7 +240,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
     <DashboardLayout>
       <div className="space-y-6 px-4 md:px-0">
         {/* Barra superior: navegação + ações */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-row items-center justify-between gap-2">
           <Button variant="ghost" className="gap-2 w-fit" asChild>
             <Link href="/admin/results">
               <ArrowLeft className="h-4 w-4" />
@@ -265,7 +265,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
         <div ref={printRef} className="space-y-6">
           {/* Cabeçalho do resultado */}
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex flex-row items-start justify-between gap-4">
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground mb-1">
                   Resultado #{result.id}
