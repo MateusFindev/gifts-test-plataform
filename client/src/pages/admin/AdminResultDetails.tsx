@@ -59,6 +59,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
   
   // Estado para modal de pontuação completa
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   // --- pega ID da URL e converte para número ---
   const resultIdParam = params?.resultId ?? "";
@@ -179,91 +180,77 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
   }
 
   const handleExportPdf = async () => {
-    if (typeof window === "undefined" || !printRef.current) return;
+    if (typeof window === "undefined" || !printRef.current || isExportingPdf) return;
 
-    const element = printRef.current;
-    const fileName = `resultado-${result.personName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-
-    // Criar clone do elemento para não afetar a página
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.width = element.offsetWidth + 'px';
-    document.body.appendChild(clone);
-
-    // Substituir cores oklch por cores compatíveis
-    const replaceOklchColors = (el: HTMLElement) => {
-      const computedStyle = window.getComputedStyle(el);
-      
-      // Mapear cores oklch para hex
-      const colorMap: Record<string, string> = {
-        'oklch(1 0 0)': '#ffffff',
-        'oklch(0.985 0 0)': '#fafafa',
-        'oklch(0.967 0.001 286.375)': '#f5f5f5',
-        'oklch(0.92 0.004 286.32)': '#e5e5e5',
-        'oklch(0.235 0.015 65)': '#262626',
-        'oklch(0.552 0.016 285.938)': '#737373',
-      };
-
-      // Substituir background-color
-      const bgColor = computedStyle.backgroundColor;
-      if (bgColor && bgColor.includes('oklch')) {
-        el.style.backgroundColor = colorMap[bgColor] || '#ffffff';
-      }
-
-      // Substituir color
-      const textColor = computedStyle.color;
-      if (textColor && textColor.includes('oklch')) {
-        el.style.color = colorMap[textColor] || '#000000';
-      }
-
-      // Substituir border-color
-      const borderColor = computedStyle.borderColor;
-      if (borderColor && borderColor.includes('oklch')) {
-        el.style.borderColor = colorMap[borderColor] || '#e5e5e5';
-      }
-
-      // Processar filhos recursivamente
-      Array.from(el.children).forEach(child => {
-        if (child instanceof HTMLElement) {
-          replaceOklchColors(child);
-        }
-      });
-    };
-
-    replaceOklchColors(clone);
-
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: fileName,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        onclone: (clonedDoc: Document) => {
-          // Garantir que o clone tenha cores compatíveis
-          const clonedElement = clonedDoc.querySelector('[style*="position: absolute"]');
-          if (clonedElement instanceof HTMLElement) {
-            replaceOklchColors(clonedElement);
-          }
-        }
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait' 
-      },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
+    setIsExportingPdf(true);
 
     try {
-      await html2pdf().set(opt).from(clone).save();
+      const element = printRef.current;
+      const fileName = `resultado-${result.personName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { 
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          // Ignorar elementos problemáticos
+          ignoreElements: (element: HTMLElement) => {
+            // Ignorar elementos com oklch que podem causar problemas
+            const style = element.style;
+            return (
+              style.backgroundColor?.includes('oklch') ||
+              style.color?.includes('oklch') ||
+              style.borderColor?.includes('oklch')
+            );
+          },
+          onclone: (clonedDoc: Document) => {
+            // Remover todas as variáveis CSS que usam oklch
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              * {
+                --background: #ffffff !important;
+                --foreground: #171717 !important;
+                --card: #ffffff !important;
+                --card-foreground: #171717 !important;
+                --popover: #ffffff !important;
+                --popover-foreground: #171717 !important;
+                --primary: #1d4ed8 !important;
+                --primary-foreground: #f0f9ff !important;
+                --secondary: #f5f5f5 !important;
+                --secondary-foreground: #404040 !important;
+                --muted: #f5f5f5 !important;
+                --muted-foreground: #737373 !important;
+                --accent: #f5f5f5 !important;
+                --accent-foreground: #171717 !important;
+                --destructive: #dc2626 !important;
+                --destructive-foreground: #fef2f2 !important;
+                --border: #e5e5e5 !important;
+                --input: #e5e5e5 !important;
+                --ring: #3b82f6 !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao gerar PDF. Por favor, tente novamente.');
     } finally {
-      // Remover clone do DOM
-      document.body.removeChild(clone);
+      setIsExportingPdf(false);
     }
   };
 
@@ -302,9 +289,23 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               <span className="hidden sm:inline">Editar</span>
             </Button>
             {isCompleted && (
-              <Button variant="outline" className="gap-2" onClick={handleExportPdf}>
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Exportar PDF</span>
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                onClick={handleExportPdf}
+                disabled={isExportingPdf}
+              >
+                {isExportingPdf ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="hidden sm:inline">Gerando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">Exportar PDF</span>
+                  </>
+                )}
               </Button>
             )}
           </div>
