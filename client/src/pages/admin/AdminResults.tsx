@@ -484,7 +484,7 @@ export default function AdminResults() {
                   {paginatedResults.map((result) => (
                     <TableRow 
                       key={result.id}
-                      className="cursor-pointer hover:bg-accent/50 transition-colors"
+                      className="cursor-pointer hover:bg-gray-50 transition-colors"
                       onClick={() => handleRowClick(result.id)}
                     >
                       <TableCell>
@@ -509,7 +509,7 @@ export default function AdminResults() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="gap-2 text-gray-900 hover:text-black hover:bg-gray-50"
                             asChild
                           >
                             <Link href={`/admin/results/${result.id}`}>
