@@ -248,12 +248,12 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
       pdf.setFontSize(14);
       pdf.setTextColor(37, 99, 235); // blue-600
       pdf.text('Dons Manifestos', 14, yPos);
-      yPos += 2;
+      yPos += 6;
 
       pdf.setFontSize(9);
       pdf.setTextColor(107, 114, 128);
       pdf.text('Principais dons identificados pelo teste completo', 14, yPos);
-      yPos += 8;
+      yPos += 10;
 
       const manifestData = result.manifestGifts.map((gift: any, index: number) => [
         (index + 1).toString(),
@@ -300,12 +300,12 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
       pdf.setFontSize(14);
       pdf.setTextColor(22, 163, 74); // green-600
       pdf.text('Dons Latentes', 14, yPos);
-      yPos += 2;
+      yPos += 6;
 
       pdf.setFontSize(9);
       pdf.setTextColor(107, 114, 128);
       pdf.text('Dons que podem ser estimulados e desenvolvidos', 14, yPos);
-      yPos += 8;
+      yPos += 10;
 
       const latentData = result.latentGifts.map((gift: any, index: number) => [
         (index + 1).toString(),
@@ -340,50 +340,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
         margin: { left: 14, right: 14 }
       });
 
-      yPos = (pdf as any).lastAutoTable.finalY + 15;
-
-      // Verificar se precisa de nova página
-      if (yPos > 240) {
-        pdf.addPage();
-        yPos = 20;
-      }
-
-      // ==== AVALIAÇÕES EXTERNAS ====
-      pdf.setFontSize(14);
-      pdf.setTextColor(75, 85, 99); // gray-600
-      pdf.text('Avaliações Externas', 14, yPos);
-      yPos += 2;
-
-      pdf.setFontSize(9);
-      pdf.setTextColor(107, 114, 128);
-      pdf.text('Contribuições de pessoas próximas ao respondente', 14, yPos);
-      yPos += 8;
-
-      const externalData = result.externalAssessments.map((assessment: any, index: number) => [
-        `Convidado ${index + 1}`,
-        assessment.status === 'completed' ? 'Concluído' : 'Pendente'
-      ]);
-
-      autoTable(pdf, {
-        startY: yPos,
-        head: [['Avaliador', 'Status']],
-        body: externalData,
-        theme: 'grid',
-        headStyles: {
-          fillColor: [241, 245, 249], // gray-100
-          textColor: [30, 41, 59],
-          fontStyle: 'bold',
-          fontSize: 10
-        },
-        bodyStyles: {
-          fontSize: 9
-        },
-        columnStyles: {
-          0: { cellWidth: 90 },
-          1: { cellWidth: 'auto', halign: 'center' }
-        },
-        margin: { left: 14, right: 14 }
-      });
+      // Avaliações externas removidas do PDF
 
       // Rodapé
       const pageCount = pdf.getNumberOfPages();
