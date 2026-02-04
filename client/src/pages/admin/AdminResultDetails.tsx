@@ -644,7 +644,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
 
         {/* Modal de Pontuação Completa */}
         <Dialog open={isScoreModalOpen} onOpenChange={setIsScoreModalOpen}>
-          <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 gap-0">
+          <DialogContent className="w-[95vw] sm:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-none h-[90vh] p-0 gap-0">
             {/* Header fixo */}
             <div className="px-6 py-4 border-b bg-white">
               <DialogTitle className="text-xl md:text-2xl font-bold mb-2">
@@ -656,8 +656,8 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
             </div>
 
             {/* Conteúdo com scroll */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px] mx-auto">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 xl:gap-12">
                 {/* Dons Manifestos */}
                 <div>
                   <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-blue-200">
