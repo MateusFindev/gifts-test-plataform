@@ -96,11 +96,6 @@ export default function AdminAnalyses() {
   const manifest: AnalysisPerson[] = (analysisQuery.data?.manifest ?? []).map(p => ({ ...p, type: "manifest" as const }));
   const latent: AnalysisPerson[] = (analysisQuery.data?.latent ?? []).map(p => ({ ...p, type: "latent" as const }));
   
-  // Debug: verificar se scope está mudando
-  console.log('[AdminAnalyses] scope:', scope);
-  console.log('[AdminAnalyses] manifest count:', manifest.length);
-  console.log('[AdminAnalyses] latent count:', latent.length);
-  
   // Combinar e ordenar por data
   const allResults = [...manifest, ...latent].sort((a, b) => {
     const dateA = new Date(a.completedAt ?? a.createdAt).getTime();

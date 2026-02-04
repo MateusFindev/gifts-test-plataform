@@ -1110,14 +1110,22 @@ export const appRouter = router({
           return Array.from(byEmail.values());
         };
 
-        const manifest =
-          input.scope === "latestPerPerson"
-            ? dedupeLatest(manifestAll)
-            : manifestAll;
-        const latent =
-          input.scope === "latestPerPerson"
-            ? dedupeLatest(latentAll)
-            : latentAll;
+        let manifest: PersonRow[];
+        let latent: PersonRow[];
+
+        if (input.scope === "latestPerPerson") {
+          // Deduplicação global: considera ambos os tipos juntos
+          const allCombined = [...manifestAll, ...latentAll];
+          const dedupedAll = dedupeLatest(allCombined);
+          
+          // Separa novamente por tipo
+          const dedupedTestIds = new Set(dedupedAll.map(r => r.testId));
+          manifest = manifestAll.filter(r => dedupedTestIds.has(r.testId));
+          latent = latentAll.filter(r => dedupedTestIds.has(r.testId));
+        } else {
+          manifest = manifestAll;
+          latent = latentAll;
+        }
 
         const sortByDateDesc = (rows: PersonRow[]) =>
           [...rows].sort((a, b) => {
