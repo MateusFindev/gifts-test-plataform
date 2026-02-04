@@ -176,6 +176,65 @@
 
 ---
 
+---
+
+### 4. AdminAnalyses.tsx (Análises por Dom)
+
+**Status:** ✅ Concluído
+
+**Melhorias implementadas:**
+
+1. ✅ **Layout Padronizado**
+   - Cabeçalho igual à página de Resultados
+   - Título + descrição + botão de ação
+   - Botão "Exportar CSV" no canto superior direito
+
+2. ✅ **Filtros Padronizados**
+   - Card de filtros com mesmo estilo das outras páginas
+   - 3 filtros: Dom, Organização, Escopo
+   - Largura fixa (w-full) em todos os selects
+   - Grid responsivo (1 coluna mobile, 2 tablet, 3 desktop)
+
+3. ✅ **Tabela Única Consolidada**
+   - Ao invés de 2 cards lado a lado (manifestos/latentes)
+   - Tabela única com coluna "Tipo"
+   - Badges coloridas:
+     - **Manifesto**: Azul (border-blue-200, bg-blue-50, text-blue-700)
+     - **Latente**: Verde (border-green-200, bg-green-50, text-green-700)
+   - Ordenação por data (mais recente primeiro)
+
+4. ✅ **Paginação**
+   - Seletor de itens por página: 5, 10, 20, 50, 100
+   - Navegação: Anterior/Próxima
+   - Indicador: "Página X de Y"
+   - Reset para página 1 ao mudar filtros
+
+5. ✅ **Botões Padronizados**
+   - Botão "Ver Resultado" com ícone Eye
+   - Mesmo estilo das outras páginas
+   - Texto oculto em mobile
+
+6. ✅ **Linhas Clicáveis**
+   - Clique na linha inteira para ver detalhes
+   - Hover effect cinza claro (bg-gray-50)
+   - Navegação para página de detalhes do resultado
+
+7. ✅ **Responsividade Mobile**
+   - Colunas ocultas em mobile:
+     - E-mail (hidden md:table-cell)
+     - Organização (hidden lg:table-cell)
+     - Realizado em (hidden sm:table-cell)
+   - Layout adaptativo
+   - Botões com texto oculto em mobile
+
+8. ✅ **Melhorias de UX**
+   - Estados vazios com mensagens claras
+   - Loading state durante busca
+   - Badge com total de resultados
+   - Exportação CSV mantida e funcional
+
+---
+
 ## Próximas Páginas
 
 Aguardando especificações do usuário para as próximas páginas.
