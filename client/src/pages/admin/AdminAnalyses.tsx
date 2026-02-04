@@ -24,7 +24,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Download, Eye, ChevronDown, FileSpreadsheet } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { GIFTS } from "@shared/testData";
@@ -59,8 +67,7 @@ export default function AdminAnalyses() {
   const [selectedGift, setSelectedGift] = useState<string>("");
   const [organizationFilter, setOrganizationFilter] = useState<string>("all");
   const [scope, setScope] = useState<Scope>("latestPerPerson");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+
 
   const organizationsQuery = trpc.adminOrganization.list.useQuery();
   const analysisQuery = trpc.adminAnalysis.byGift.useQuery(
@@ -88,30 +95,20 @@ export default function AdminAnalyses() {
   const isLoading = analysisQuery.isLoading;
   const hasLoaded = !!analysisQuery.data;
 
-  // Paginação
-  const totalItems = allResults.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentResults = allResults.slice(startIndex, endIndex);
-
-  // Reset para página 1 quando filtros mudarem
+  // Handlers
   const handleGiftChange = (value: string) => {
     setSelectedGift(value);
-    setCurrentPage(1);
   };
 
   const handleOrganizationChange = (value: string) => {
     setOrganizationFilter(value);
-    setCurrentPage(1);
   };
 
   const handleScopeChange = (value: Scope) => {
     setScope(value);
-    setCurrentPage(1);
   };
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     if (!analysisQuery.data || allResults.length === 0) return;
 
     const escape = (value: unknown) => {
@@ -159,7 +156,7 @@ export default function AdminAnalyses() {
     const link = document.createElement("a");
     link.href = url;
     const safeGiftName = selectedGift.replace(/\s+/g, "_");
-    link.download = `analise_${safeGiftName}.csv`;
+    link.download = `analise_${safeGiftName}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -168,6 +165,146 @@ export default function AdminAnalyses() {
 
   const handleViewResult = (testId: number) => {
     setLocation(`/admin/results/${testId}`);
+  };
+
+  const handleExportPDF = () => {
+    if (!analysisQuery.data || allResults.length === 0) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = 20;
+
+    // Título
+    doc.setFontSize(18);
+    doc.setTextColor(37, 99, 235); // blue-600
+    doc.text(`Análise do Dom: ${selectedGift}`, pageWidth / 2, yPos, { align: "center" });
+    yPos += 10;
+
+    // Informações
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const orgName = organizationFilter === "all" 
+      ? "Todas as organizações" 
+      : orgOptions.find(o => String(o.id) === organizationFilter)?.name ?? "";
+    doc.text(`Organização: ${orgName}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Escopo: ${scope === "latestPerPerson" ? "Último resultado de cada pessoa" : "Todos os resultados"}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}`, 14, yPos);
+    yPos += 10;
+
+    // Tabela Dons Manifestos
+    if (manifest.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(37, 99, 235); // blue-600
+      doc.text("Dons Manifestos", 14, yPos);
+      yPos += 2;
+
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${manifest.length} resultado${manifest.length === 1 ? "" : "s"}`, 14, yPos);
+      yPos += 8;
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [["Nome", "E-mail", "Organização", "Realizado em"]],
+        body: manifest.map((p) => [
+          p.name,
+          p.email,
+          p.organizationName ?? "-",
+          formatDateTime(p.completedAt ?? p.createdAt),
+        ]),
+        theme: "striped",
+        headStyles: {
+          fillColor: [37, 99, 235], // blue-600
+          textColor: [255, 255, 255],
+          fontSize: 9,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: {
+          fillColor: [239, 246, 255], // blue-50
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 32 },
+        },
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    // Tabela Dons Latentes
+    if (latent.length > 0) {
+      // Nova página se necessário
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setTextColor(22, 163, 74); // green-600
+      doc.text("Dons Latentes", 14, yPos);
+      yPos += 2;
+
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${latent.length} resultado${latent.length === 1 ? "" : "s"}`, 14, yPos);
+      yPos += 8;
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [["Nome", "E-mail", "Organização", "Realizado em"]],
+        body: latent.map((p) => [
+          p.name,
+          p.email,
+          p.organizationName ?? "-",
+          formatDateTime(p.completedAt ?? p.createdAt),
+        ]),
+        theme: "striped",
+        headStyles: {
+          fillColor: [22, 163, 74], // green-600
+          textColor: [255, 255, 255],
+          fontSize: 9,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: {
+          fillColor: [240, 253, 244], // green-50
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 32 },
+        },
+      });
+    }
+
+    // Rodapé
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Página ${i} de ${pageCount}`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" },
+      );
+    }
+
+    const safeGiftName = selectedGift.replace(/\s+/g, "_");
+    doc.save(`analise_${safeGiftName}.pdf`);
   };
 
   return (
@@ -183,15 +320,29 @@ export default function AdminAnalyses() {
               Análises por Dom
             </h1>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            disabled={!hasLoaded || allResults.length === 0}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar CSV</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={!hasLoaded || allResults.length === 0}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Exportar</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <Download className="h-4 w-4 mr-2" />
+                PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Excel (CSV)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Filtros */}
@@ -285,7 +436,7 @@ export default function AdminAnalyses() {
             </CardContent>
           </Card>
         ) : (
-          <>
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* Dons Manifestos */}
             <Card>
               <CardHeader>
@@ -321,7 +472,7 @@ export default function AdminAnalyses() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {manifest.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((person) => {
+                        {manifest.map((person) => {
                           const dateIso = person.completedAt ?? person.createdAt;
                           return (
                             <TableRow 
@@ -342,18 +493,18 @@ export default function AdminAnalyses() {
                                 {formatDateTime(dateIso)}
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleViewResult(person.testId);
-                                  }}
-                                  className="text-gray-900"
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  <span className="hidden sm:inline">Ver Resultado</span>
-                                </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewResult(person.testId);
+                                }}
+                                className="gap-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                                <span className="hidden sm:inline">Ver Resultado</span>
+                              </Button>
                               </TableCell>
                             </TableRow>
                           );
@@ -400,7 +551,7 @@ export default function AdminAnalyses() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {latent.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((person) => {
+                        {latent.map((person) => {
                           const dateIso = person.completedAt ?? person.createdAt;
                           return (
                             <TableRow 
@@ -444,63 +595,7 @@ export default function AdminAnalyses() {
               </CardContent>
             </Card>
 
-            {/* Paginação (apenas se houver resultados) */}
-            {(manifest.length > 0 || latent.length > 0) && (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        Itens por página:
-                      </span>
-                      <Select
-                        value={String(itemsPerPage)}
-                        onValueChange={(value) => {
-                          setItemsPerPage(Number(value));
-                          setCurrentPage(1);
-                        }}
-                      >
-                        <SelectTrigger className="w-[70px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">5</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="20">20</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        Página {currentPage} de {Math.max(1, Math.ceil(Math.max(manifest.length, latent.length) / itemsPerPage))}
-                      </span>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                        >
-                          Anterior
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(p => Math.min(Math.ceil(Math.max(manifest.length, latent.length) / itemsPerPage), p + 1))}
-                          disabled={currentPage >= Math.ceil(Math.max(manifest.length, latent.length) / itemsPerPage)}
-                        >
-                          Próxima
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
+          </div>
         )}
       </div>
     </DashboardLayout>
