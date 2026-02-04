@@ -112,3 +112,74 @@ export function calculateGifts(
     latentGiftScores: latentTop,
   };
 }
+
+/**
+ * Calcula o ranking completo de todos os 30 dons (sem filtros)
+ * Usado para exibir a pontuação completa no painel administrativo
+ */
+export function calculateFullGiftRanking(
+  selfAnswers: number[],
+  externalAnswers1?: number[],
+  externalAnswers2?: number[],
+): {
+  allManifestScores: GiftScore[];
+  allLatentScores: GiftScore[];
+} {
+  // 1) Inicializar pontuações para cada dom (30 dons)
+  const manifestScores: number[] = new Array(30).fill(0);
+  const latentScores: number[] = new Array(30).fill(0);
+
+  // 2) Dons manifestos - autoavaliação
+  for (let i = 0; i < 30; i++) {
+    manifestScores[i % 30] += selfAnswers[i] ?? 0;
+  }
+  for (let i = 60; i < 90; i++) {
+    manifestScores[i % 30] += selfAnswers[i] ?? 0;
+  }
+  for (let i = 120; i < 150; i++) {
+    manifestScores[i % 30] += selfAnswers[i] ?? 0;
+  }
+
+  // 3) Somar avaliações externas
+  if (externalAnswers1) {
+    for (let i = 0; i < 30; i++) {
+      manifestScores[i] += externalAnswers1[i] ?? 0;
+    }
+  }
+  if (externalAnswers2) {
+    for (let i = 0; i < 30; i++) {
+      manifestScores[i] += externalAnswers2[i] ?? 0;
+    }
+  }
+
+  // 4) Dons latentes - autoavaliação
+  for (let i = 30; i < 60; i++) {
+    latentScores[i % 30] += selfAnswers[i] ?? 0;
+  }
+  for (let i = 90; i < 120; i++) {
+    latentScores[i % 30] += selfAnswers[i] ?? 0;
+  }
+  for (let i = 150; i < 180; i++) {
+    latentScores[i % 30] += selfAnswers[i] ?? 0;
+  }
+
+  // 5) Montar lista completa de scores (todos os 30 dons)
+  const allManifestScores: GiftScore[] = gifts
+    .map((gift, index) => ({
+      gift,
+      score: manifestScores[index] ?? 0,
+    }))
+    .sort((a, b) => b.score - a.score || a.gift.localeCompare(b.gift));
+
+  const allLatentScores: GiftScore[] = gifts
+    .map((gift, index) => ({
+      gift,
+      score: latentScores[index] ?? 0,
+    }))
+    .sort((a, b) => b.score - a.score || a.gift.localeCompare(b.gift));
+
+  return {
+    allManifestScores,
+    allLatentScores,
+  };
+}
