@@ -27,11 +27,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Download, Mail, Loader2, Edit2, Clock, AlertCircle, CheckCircle2, BarChart3 } from "lucide-react";
+import { ArrowLeft, Download, Mail, Loader2, Edit2, Clock, AlertCircle, CheckCircle2, BarChart3, FileDown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { trpc } from "@/lib/trpc";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { StatusBadge } from "@/components/StatusBadge";
 
 const formatDate = (date?: string | null) => {
@@ -744,11 +746,99 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
             </div>
 
             {/* Footer fixo */}
-            <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg">
+            <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
+              <Button 
+                variant="default"
+                onClick={() => {
+                  if (!result.allManifestScores || !result.allLatentScores) return;
+                  
+                  const doc = new jsPDF();
+                  const pageWidth = doc.internal.pageSize.getWidth();
+                  
+                  // Título
+                  doc.setFontSize(18);
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Pontuação Completa dos Dons Espirituais', pageWidth / 2, 20, { align: 'center' });
+                  
+                  // Informações do teste
+                  doc.setFontSize(10);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(`Nome: ${result.name}`, 14, 35);
+                  if (result.organization) {
+                    doc.text(`Organização: ${result.organization}`, 14, 41);
+                  }
+                  doc.text(`Data: ${format(new Date(result.createdAt), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, 14, result.organization ? 47 : 41);
+                  
+                  const startY = result.organization ? 55 : 49;
+                  
+                  // Tabela de Dons Manifestos
+                  doc.setFontSize(12);
+                  doc.setFont('helvetica', 'bold');
+                  doc.setTextColor(37, 99, 235); // blue-600
+                  doc.text('Dons Manifestos (Máx: 20 pontos)', 14, startY);
+                  
+                  autoTable(doc, {
+                    startY: startY + 5,
+                    head: [['#', 'Dom', 'Percentual', 'Pontuação']],
+                    body: result.allManifestScores.map((gift, index) => [
+                      (index + 1).toString(),
+                      gift.name,
+                      `${gift.percentage}%`,
+                      `${gift.score}/20`
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+                    columnStyles: {
+                      0: { cellWidth: 10, halign: 'center' },
+                      1: { cellWidth: 80 },
+                      2: { cellWidth: 30, halign: 'center' },
+                      3: { cellWidth: 30, halign: 'center' }
+                    },
+                    margin: { left: 14, right: 14 },
+                    styles: { fontSize: 9, cellPadding: 3 }
+                  });
+                  
+                  // Tabela de Dons Latentes
+                  const finalY = (doc as any).lastAutoTable.finalY + 10;
+                  doc.setFontSize(12);
+                  doc.setFont('helvetica', 'bold');
+                  doc.setTextColor(22, 163, 74); // green-600
+                  doc.text('Dons Latentes (Máx: 12 pontos)', 14, finalY);
+                  
+                  autoTable(doc, {
+                    startY: finalY + 5,
+                    head: [['#', 'Dom', 'Percentual', 'Pontuação']],
+                    body: result.allLatentScores.map((gift, index) => [
+                      (index + 1).toString(),
+                      gift.name,
+                      `${gift.percentage}%`,
+                      `${gift.score}/12`
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
+                    columnStyles: {
+                      0: { cellWidth: 10, halign: 'center' },
+                      1: { cellWidth: 80 },
+                      2: { cellWidth: 30, halign: 'center' },
+                      3: { cellWidth: 30, halign: 'center' }
+                    },
+                    margin: { left: 14, right: 14 },
+                    styles: { fontSize: 9, cellPadding: 3 }
+                  });
+                  
+                  // Salvar PDF
+                  const fileName = `pontuacao-completa-${result.name.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+                  doc.save(fileName);
+                }}
+                className="w-full sm:w-auto"
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
               <Button 
                 variant="outline" 
                 onClick={() => setIsScoreModalOpen(false)}
-                className="w-full md:w-auto md:ml-auto md:block"
+                className="w-full sm:w-auto"
               >
                 Fechar
               </Button>
