@@ -644,95 +644,112 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
 
         {/* Modal de Pontuação Completa */}
         <Dialog open={isScoreModalOpen} onOpenChange={setIsScoreModalOpen}>
-          <DialogContent className="max-w-7xl max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader className="pb-4">
-              <DialogTitle className="text-2xl">Pontuação Completa dos Dons</DialogTitle>
-              <DialogDescription className="text-base">
+          <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 gap-0">
+            {/* Header fixo */}
+            <div className="px-6 py-4 border-b bg-white">
+              <DialogTitle className="text-xl md:text-2xl font-bold mb-2">
+                Pontuação Completa dos Dons
+              </DialogTitle>
+              <DialogDescription className="text-sm md:text-base">
                 Ranking completo de todos os dons avaliados, ordenados por pontuação
               </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 overflow-y-auto px-1" style={{ maxHeight: 'calc(85vh - 180px)' }}>
-              {/* Dons Manifestos */}
-              <div className="space-y-3 pr-2">
-                <div className="flex items-center gap-3 mb-4 sticky top-0 bg-white z-10 pb-2">
-                  <div className="h-4 w-4 rounded-full bg-blue-600"></div>
-                  <h3 className="text-xl font-semibold text-blue-900">Dons Manifestos</h3>
-                  <span className="text-sm text-muted-foreground">(Máx: 20 pontos)</span>
-                </div>
-                <div className="space-y-2.5">
-                  {result.allManifestScores && result.allManifestScores.length > 0 ? (
-                    result.allManifestScores.map((gift, index) => (
-                      <div
-                        key={gift.name}
-                        className="flex items-center justify-between p-3.5 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50/50 to-white hover:from-blue-50 hover:to-blue-50/30 transition-all shadow-sm hover:shadow"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <span className="flex-shrink-0 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                            {index + 1}
-                          </span>
-                          <span className="font-medium text-gray-900 text-base truncate">{gift.name}</span>
-                        </div>
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          <span className="text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1.5 rounded-full min-w-[60px] text-center">
-                            {gift.percentage}%
-                          </span>
-                          <span className="text-sm text-muted-foreground font-medium min-w-[50px] text-right">
-                            {gift.score}/20
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
-                  )}
-                </div>
-              </div>
+            </div>
 
-              {/* Dons Latentes */}
-              <div className="space-y-3 pr-2">
-                <div className="flex items-center gap-3 mb-4 sticky top-0 bg-white z-10 pb-2">
-                  <div className="h-4 w-4 rounded-full bg-green-600"></div>
-                  <h3 className="text-xl font-semibold text-green-900">Dons Latentes</h3>
-                  <span className="text-sm text-muted-foreground">(Máx: 12 pontos)</span>
-                </div>
-                <div className="space-y-2.5">
-                  {result.allLatentScores && result.allLatentScores.length > 0 ? (
-                    result.allLatentScores.map((gift, index) => (
-                      <div
-                        key={gift.name}
-                        className="flex items-center justify-between p-3.5 rounded-lg border border-green-200 bg-gradient-to-r from-green-50/50 to-white hover:from-green-50 hover:to-green-50/30 transition-all shadow-sm hover:shadow"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <span className="flex-shrink-0 w-7 h-7 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+            {/* Conteúdo com scroll */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px] mx-auto">
+                {/* Dons Manifestos */}
+                <div>
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-blue-200">
+                    <div className="h-5 w-5 rounded-full bg-blue-600"></div>
+                    <h3 className="text-lg md:text-xl font-bold text-blue-900">
+                      Dons Manifestos
+                    </h3>
+                    <span className="text-xs md:text-sm text-muted-foreground ml-auto">
+                      (Máx: 20 pontos)
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {result.allManifestScores && result.allManifestScores.length > 0 ? (
+                      result.allManifestScores.map((gift, index) => (
+                        <div
+                          key={gift.name}
+                          className="flex items-center gap-4 p-4 rounded-lg border border-blue-200 bg-blue-50/30 hover:bg-blue-50 transition-colors"
+                        >
+                          <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                             {index + 1}
                           </span>
-                          <span className="font-medium text-gray-900 text-base truncate">{gift.name}</span>
-                        </div>
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1.5 rounded-full min-w-[60px] text-center">
-                            {gift.percentage}%
+                          <span className="flex-1 font-medium text-gray-900 text-base">
+                            {gift.name}
                           </span>
-                          <span className="text-sm text-muted-foreground font-medium min-w-[50px] text-right">
-                            {gift.score}/12
-                          </span>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className="text-sm font-bold text-blue-700 bg-blue-100 px-3 py-1.5 rounded-full min-w-[65px] text-center">
+                              {gift.percentage}%
+                            </span>
+                            <span className="text-sm text-gray-600 font-medium min-w-[55px] text-right">
+                              {gift.score}/20
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
-                  )}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dons Latentes */}
+                <div>
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-green-200">
+                    <div className="h-5 w-5 rounded-full bg-green-600"></div>
+                    <h3 className="text-lg md:text-xl font-bold text-green-900">
+                      Dons Latentes
+                    </h3>
+                    <span className="text-xs md:text-sm text-muted-foreground ml-auto">
+                      (Máx: 12 pontos)
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {result.allLatentScores && result.allLatentScores.length > 0 ? (
+                      result.allLatentScores.map((gift, index) => (
+                        <div
+                          key={gift.name}
+                          className="flex items-center gap-4 p-4 rounded-lg border border-green-200 bg-green-50/30 hover:bg-green-50 transition-colors"
+                        >
+                          <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            {index + 1}
+                          </span>
+                          <span className="flex-1 font-medium text-gray-900 text-base">
+                            {gift.name}
+                          </span>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className="text-sm font-bold text-green-700 bg-green-100 px-3 py-1.5 rounded-full min-w-[65px] text-center">
+                              {gift.percentage}%
+                            </span>
+                            <span className="text-sm text-gray-600 font-medium min-w-[55px] text-right">
+                              {gift.score}/12
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-            <DialogFooter className="pt-4 mt-2 border-t">
+
+            {/* Footer fixo */}
+            <div className="px-6 py-4 border-t bg-gray-50">
               <Button 
                 variant="outline" 
                 onClick={() => setIsScoreModalOpen(false)}
-                className="w-full sm:w-auto"
+                className="w-full md:w-auto md:ml-auto md:block"
               >
                 Fechar
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
