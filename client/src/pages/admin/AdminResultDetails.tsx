@@ -34,7 +34,6 @@ import { ptBR } from "date-fns/locale";
 import { trpc } from "@/lib/trpc";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
 import { StatusBadge } from "@/components/StatusBadge";
 
 const formatDate = (date?: string | null) => {
@@ -179,112 +178,238 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
     );
   }
 
-  const handleExportPdf = async () => {
-    if (typeof window === "undefined" || !printRef.current || isExportingPdf) return;
+  const handleExportPdf = () => {
+    if (typeof window === "undefined" || isExportingPdf) return;
 
     setIsExportingPdf(true);
 
     try {
-      const element = printRef.current;
       const fileName = `resultado-${result.personName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      const pdf = new jsPDF('portrait', 'mm', 'a4');
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      let yPos = 20;
 
-      // Capturar como canvas usando html2canvas
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        onclone: (clonedDoc) => {
-          // Substituir todas as variáveis CSS por valores hex
-          const style = clonedDoc.createElement('style');
-          style.textContent = `
-            :root {
-              --background: 0 0% 100%;
-              --foreground: 0 0% 9%;
-              --card: 0 0% 100%;
-              --card-foreground: 0 0% 9%;
-              --popover: 0 0% 100%;
-              --popover-foreground: 0 0% 9%;
-              --primary: 217 91% 48%;
-              --primary-foreground: 206 100% 97%;
-              --secondary: 0 0% 96%;
-              --secondary-foreground: 0 0% 25%;
-              --muted: 0 0% 96%;
-              --muted-foreground: 0 0% 45%;
-              --accent: 0 0% 96%;
-              --accent-foreground: 0 0% 9%;
-              --destructive: 0 84% 50%;
-              --destructive-foreground: 0 86% 97%;
-              --border: 0 0% 90%;
-              --input: 0 0% 90%;
-              --ring: 217 91% 60%;
-            }
-            * {
-              color: #171717 !important;
-              background-color: transparent !important;
-            }
-            .bg-white { background-color: #ffffff !important; }
-            .bg-gray-50 { background-color: #fafafa !important; }
-            .bg-blue-50 { background-color: #eff6ff !important; }
-            .bg-green-50 { background-color: #f0fdf4 !important; }
-            .bg-yellow-50 { background-color: #fefce8 !important; }
-            .text-blue-600 { color: #2563eb !important; }
-            .text-green-600 { color: #16a34a !important; }
-            .text-yellow-600 { color: #ca8a04 !important; }
-            .text-gray-600 { color: #4b5563 !important; }
-            .text-gray-900 { color: #111827 !important; }
-            .border-blue-200 { border-color: #bfdbfe !important; }
-            .border-green-200 { border-color: #bbf7d0 !important; }
-            .border-gray-200 { border-color: #e5e7eb !important; }
-            svg { fill: currentColor !important; }
-          `;
-          clonedDoc.head.appendChild(style);
+      // ==== CABEÇALHO ====
+      pdf.setFontSize(20);
+      pdf.setTextColor(29, 78, 216); // blue-600
+      pdf.text('Resultado do Teste de Dons Espirituais', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 15;
 
-          // Remover elementos problemáticos
-          const body = clonedDoc.body;
-          if (body) {
-            // Remover todos os SVGs que podem ter oklch
-            const svgs = body.querySelectorAll('svg');
-            svgs.forEach(svg => {
-              const parent = svg.parentElement;
-              if (parent && !parent.classList.contains('progress-bar')) {
-                svg.remove();
-              }
-            });
-          }
-        }
+      // ==== INFORMAÇÕES DO TESTE ====
+      pdf.setFontSize(10);
+      pdf.setTextColor(75, 85, 99); // gray-600
+      pdf.text(`Resultado #${result.id}`, 14, yPos);
+      yPos += 6;
+      
+      pdf.setFontSize(14);
+      pdf.setTextColor(17, 24, 39); // gray-900
+      pdf.text(result.personName, 14, yPos);
+      yPos += 6;
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(107, 114, 128); // gray-500
+      pdf.text(result.email, 14, yPos);
+      yPos += 10;
+
+      // Tabela de informações
+      const infoData = [
+        ['Organização', result.organizationName ?? 'Não informada'],
+        ['Criado em', formatDate(result.createdAt)],
+        ['Finalizado em', formatDate(result.completedAt)],
+        ['Status', getStatusLabel(result.status)]
+      ];
+
+      autoTable(pdf, {
+        startY: yPos,
+        head: [['Informação', 'Valor']],
+        body: infoData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [241, 245, 249], // gray-100
+          textColor: [30, 41, 59], // gray-800
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        bodyStyles: {
+          fontSize: 9,
+          textColor: [55, 65, 81] // gray-700
+        },
+        columnStyles: {
+          0: { cellWidth: 50, fontStyle: 'bold' },
+          1: { cellWidth: 'auto' }
+        },
+        margin: { left: 14, right: 14 }
       });
 
-      // Criar PDF com jsPDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
+      yPos = (pdf as any).lastAutoTable.finalY + 15;
+
+      // ==== DONS MANIFESTOS ====
+      pdf.setFontSize(14);
+      pdf.setTextColor(37, 99, 235); // blue-600
+      pdf.text('Dons Manifestos', 14, yPos);
+      yPos += 2;
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Principais dons identificados pelo teste completo', 14, yPos);
+      yPos += 8;
+
+      const manifestData = result.manifestGifts.map((gift: any, index: number) => [
+        (index + 1).toString(),
+        gift.name,
+        `${gift.percentage}%`,
+        `${gift.score}/20`
+      ]);
+
+      autoTable(pdf, {
+        startY: yPos,
+        head: [['#', 'Dom', 'Percentual', 'Pontuação']],
+        body: manifestData,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [37, 99, 235], // blue-600
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        bodyStyles: {
+          fontSize: 9
+        },
+        alternateRowStyles: {
+          fillColor: [239, 246, 255] // blue-50
+        },
+        columnStyles: {
+          0: { cellWidth: 15, halign: 'center' },
+          1: { cellWidth: 90 },
+          2: { cellWidth: 30, halign: 'center' },
+          3: { cellWidth: 35, halign: 'center' }
+        },
+        margin: { left: 14, right: 14 }
       });
 
-      // Calcular dimensões
-      const imgWidth = 190; // A4 width - margens
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pageHeight = 277; // A4 height - margens
+      yPos = (pdf as any).lastAutoTable.finalY + 15;
 
-      let heightLeft = imgHeight;
-      let position = 10;
-
-      // Adicionar imagem ao PDF
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      // Adicionar páginas extras se necessário
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + 10;
+      // Verificar se precisa de nova página
+      if (yPos > 240) {
         pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        yPos = 20;
       }
 
-      // Salvar PDF
+      // ==== DONS LATENTES ====
+      pdf.setFontSize(14);
+      pdf.setTextColor(22, 163, 74); // green-600
+      pdf.text('Dons Latentes', 14, yPos);
+      yPos += 2;
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Dons que podem ser estimulados e desenvolvidos', 14, yPos);
+      yPos += 8;
+
+      const latentData = result.latentGifts.map((gift: any, index: number) => [
+        (index + 1).toString(),
+        gift.name,
+        `${gift.percentage}%`,
+        `${gift.score}/12`
+      ]);
+
+      autoTable(pdf, {
+        startY: yPos,
+        head: [['#', 'Dom', 'Percentual', 'Pontuação']],
+        body: latentData,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [22, 163, 74], // green-600
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        bodyStyles: {
+          fontSize: 9
+        },
+        alternateRowStyles: {
+          fillColor: [240, 253, 244] // green-50
+        },
+        columnStyles: {
+          0: { cellWidth: 15, halign: 'center' },
+          1: { cellWidth: 90 },
+          2: { cellWidth: 30, halign: 'center' },
+          3: { cellWidth: 35, halign: 'center' }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      yPos = (pdf as any).lastAutoTable.finalY + 15;
+
+      // Verificar se precisa de nova página
+      if (yPos > 240) {
+        pdf.addPage();
+        yPos = 20;
+      }
+
+      // ==== AVALIAÇÕES EXTERNAS ====
+      pdf.setFontSize(14);
+      pdf.setTextColor(75, 85, 99); // gray-600
+      pdf.text('Avaliações Externas', 14, yPos);
+      yPos += 2;
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Contribuições de pessoas próximas ao respondente', 14, yPos);
+      yPos += 8;
+
+      const externalData = result.externalAssessments.map((assessment: any, index: number) => [
+        `Convidado ${index + 1}`,
+        assessment.status === 'completed' ? 'Concluído' : 'Pendente'
+      ]);
+
+      autoTable(pdf, {
+        startY: yPos,
+        head: [['Avaliador', 'Status']],
+        body: externalData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [241, 245, 249], // gray-100
+          textColor: [30, 41, 59],
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        bodyStyles: {
+          fontSize: 9
+        },
+        columnStyles: {
+          0: { cellWidth: 90 },
+          1: { cellWidth: 'auto', halign: 'center' }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      // Rodapé
+      const pageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(156, 163, 175); // gray-400
+        pdf.text(
+          `Página ${i} de ${pageCount}`,
+          pageWidth / 2,
+          pdf.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+        pdf.text(
+          'Teste de Dons Espirituais',
+          14,
+          pdf.internal.pageSize.getHeight() - 10
+        );
+        pdf.text(
+          formatDate(new Date().toISOString()),
+          pageWidth - 14,
+          pdf.internal.pageSize.getHeight() - 10,
+          { align: 'right' }
+        );
+      }
+
       pdf.save(fileName);
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
@@ -292,6 +417,16 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
     } finally {
       setIsExportingPdf(false);
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'completed': 'Finalizado',
+      'in_progress': 'Em Andamento',
+      'awaiting_external': 'Aguardando Avaliações',
+      'draft': 'Rascunho'
+    };
+    return labels[status] || status;
   };
 
   const openEditDialog = () => {
