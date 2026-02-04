@@ -57,28 +57,14 @@ import { trpc } from "@/lib/trpc";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronDown } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
 
 const formatDate = (date: string | undefined) => {
   if (!date) return "--";
   return format(new Date(date), "dd MMM yyyy", { locale: ptBR });
 };
 
-const statusMap: Record<
-  string,
-  {
-    text: string;
-    icon: React.ElementType;
-    variant: "default" | "secondary" | "outline";
-  }
-> = {
-  completed: { text: "Finalizado", icon: CheckCircle, variant: "default" },
-  awaiting_external: {
-    text: "Aguardando Respostas",
-    icon: Clock,
-    variant: "secondary",
-  },
-  in_progress: { text: "Em Andamento", icon: Pencil, variant: "outline" },
-};
+
 
 const chartConfig = {
   manifest: { label: "Dons Manifestos", color: "#2563eb" }, // azul
@@ -521,8 +507,6 @@ export default function AdminDashboard() {
                 </TableHeader>
                 <TableBody>
                   {filteredRecentResults.slice(0, 5).map((result) => {
-                    const statusInfo =
-                      statusMap[result.status] || statusMap.in_progress;
                     return (
                       <TableRow key={result.id}>
                         <TableCell className="font-medium">
@@ -532,13 +516,7 @@ export default function AdminDashboard() {
                           {result.organizationName ?? "—"}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={statusInfo.variant}
-                            className="gap-1.5 pl-2 text-xs"
-                          >
-                            <statusInfo.icon className="h-3 w-3" />
-                            <span className="hidden sm:inline">{statusInfo.text}</span>
-                          </Badge>
+                          <StatusBadge status={result.status} className="text-xs" />
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" asChild>

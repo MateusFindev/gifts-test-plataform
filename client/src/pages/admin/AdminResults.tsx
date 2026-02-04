@@ -32,28 +32,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Filter, Search, Loader2, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Loader2, Trash2, Eye, ChevronDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Link } from "wouter";
-
-const statusLabels: Record<string, string> = {
-  completed: "Concluído",
-  awaiting_external: "Aguardando externos",
-  in_progress: "Em andamento",
-  draft: "Rascunho",
-};
-
-const statusVariants: Record<
-  string,
-  "default" | "secondary" | "outline" | "destructive"
-> = {
-  completed: "default",
-  awaiting_external: "secondary",
-  in_progress: "outline",
-  draft: "outline",
-};
+import { Link, useLocation } from "wouter";
+import { StatusBadge } from "@/components/StatusBadge";
+import { STATUS_CONFIG } from "@/lib/status-config";
 
 const formatDate = (date?: string) => {
   if (!date) return "--";
@@ -72,12 +59,15 @@ type AdminResult = {
 };
 
 export default function AdminResults() {
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [organizationFilter, setOrganizationFilter] = useState("all");
+  // Multi-seleção de status e organizações
+  const [statusFilters, setStatusFilters] = useState<string[]>(["all"]);
+  const [organizationFilters, setOrganizationFilters] = useState<string[]>(["all"]);
   const [search, setSearch] = useState("");
 
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
+
+  const [, navigate] = useLocation();
 
   const utils = trpc.useUtils();
 
@@ -93,14 +83,56 @@ export default function AdminResults() {
 
   const results: AdminResult[] = listQuery.data ?? [];
 
+  // Controle de abertura dos popovers
+  const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
+  const [isOrgPopoverOpen, setIsOrgPopoverOpen] = useState(false);
+
+  // Helpers para multi-seleção
+  const isAllStatusSelected = statusFilters.includes("all");
+  const isAllOrgSelected = organizationFilters.includes("all");
+
+  const toggleStatus = (status: string) => {
+    if (status === "all") {
+      setStatusFilters(["all"]);
+      return;
+    }
+
+    setStatusFilters(prev => {
+      const withoutAll = prev.filter(s => s !== "all");
+      if (withoutAll.includes(status)) {
+        const newSelection = withoutAll.filter(s => s !== status);
+        return newSelection.length === 0 ? ["all"] : newSelection;
+      } else {
+        return [...withoutAll, status];
+      }
+    });
+  };
+
+  const toggleOrganization = (orgId: string) => {
+    if (orgId === "all") {
+      setOrganizationFilters(["all"]);
+      return;
+    }
+
+    setOrganizationFilters(prev => {
+      const withoutAll = prev.filter(id => id !== "all");
+      if (withoutAll.includes(orgId)) {
+        const newSelection = withoutAll.filter(id => id !== orgId);
+        return newSelection.length === 0 ? ["all"] : newSelection;
+      } else {
+        return [...withoutAll, orgId];
+      }
+    });
+  };
+
   const filteredResults = useMemo(() => {
     return results.filter((result) => {
       const matchesStatus =
-        statusFilter === "all" || result.status === statusFilter;
+        isAllStatusSelected || statusFilters.includes(result.status);
 
       const matchesOrganization =
-        organizationFilter === "all" ||
-        String(result.organizationId ?? "") === organizationFilter;
+        isAllOrgSelected ||
+        organizationFilters.includes(String(result.organizationId ?? ""));
 
       const lower = search.toLowerCase().trim();
       const matchesSearch =
@@ -110,7 +142,7 @@ export default function AdminResults() {
 
       return matchesStatus && matchesOrganization && matchesSearch;
     });
-  }, [results, statusFilter, organizationFilter, search]);
+  }, [results, statusFilters, organizationFilters, search, isAllStatusSelected, isAllOrgSelected]);
 
   const totals = useMemo(() => {
     return {
@@ -161,29 +193,51 @@ export default function AdminResults() {
     deleteMutation.mutate({ id: resultToDelete.id });
   };
 
+  // Textos dos seletores
+  const getStatusSelectorText = () => {
+    if (isAllStatusSelected) return "Todos os status";
+    if (statusFilters.length === 1) {
+      return STATUS_CONFIG[statusFilters[0] as keyof typeof STATUS_CONFIG]?.label ?? "Status";
+    }
+    return `${statusFilters.length} status selecionados`;
+  };
+
+  const getOrgSelectorText = () => {
+    if (isAllOrgSelected) return "Todas as organizações";
+    if (organizationFilters.length === 1) {
+      const org = orgOptions.find(o => String(o.id) === organizationFilters[0]);
+      return org?.name ?? "Organizações";
+    }
+    return `${organizationFilters.length} organizações`;
+  };
+
+  const handleRowClick = (resultId: number) => {
+    navigate(`/admin/results/${resultId}`);
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 px-4 md:px-0">
         {/* Cabeçalho */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
               Monitoramento em tempo real
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
               Resultados
             </h1>
           </div>
         </div>
 
         {/* Resumo */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Concluídos
+                Finalizados
               </CardTitle>
-              <Badge variant="default">OK</Badge>
+              <StatusBadge status="completed" showIcon={false} />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{totals.completed}</div>
@@ -195,9 +249,9 @@ export default function AdminResults() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Aguardando externos
+                Aguardando Respostas
               </CardTitle>
-              <Badge variant="secondary">Follow-up</Badge>
+              <StatusBadge status="awaiting_external" showIcon={false} />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
@@ -211,9 +265,9 @@ export default function AdminResults() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Em andamento
+                Em Andamento
               </CardTitle>
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <StatusBadge status="in_progress" showIcon={false} />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{totals.in_progress}</div>
@@ -227,12 +281,12 @@ export default function AdminResults() {
         {/* Filtros */}
         <Card>
           <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base md:text-lg">Filtros</CardTitle>
+            <CardDescription className="text-xs md:text-sm">
               Combine filtros para navegar entre os resultados
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-4">
+          <CardContent className="grid gap-4 grid-cols-1 md:grid-cols-4">
             <div className="md:col-span-2">
               <label className="text-sm font-medium mb-1 block">
                 Buscar respondente
@@ -247,42 +301,135 @@ export default function AdminResults() {
                 />
               </div>
             </div>
+            
+            {/* Filtro de Status com Multi-Seleção */}
             <div>
               <label className="text-sm font-medium mb-1 block">Status</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                  <SelectItem value="awaiting_external">
-                    Aguardando externos
-                  </SelectItem>
-                  <SelectItem value="in_progress">Em andamento</SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover open={isStatusPopoverOpen} onOpenChange={setIsStatusPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span className="truncate">{getStatusSelectorText()}</span>
+                    <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0" align="start">
+                  <div className="p-2 space-y-1">
+                    {/* Opção "Todos" */}
+                    <div
+                      className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleStatus("all");
+                      }}
+                    >
+                      <Checkbox
+                        checked={isAllStatusSelected}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStatus("all");
+                        }}
+                      />
+                      <label className="text-sm font-medium cursor-pointer flex-1">
+                        Todos os status
+                      </label>
+                    </div>
+                    
+                    <div className="border-t my-1" />
+                    
+                    {/* Lista de status */}
+                    {Object.entries(STATUS_CONFIG).map(([key, config]) => {
+                      const Icon = config.icon;
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleStatus(key);
+                          }}
+                        >
+                          <Checkbox
+                            checked={statusFilters.includes(key)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleStatus(key);
+                            }}
+                          />
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <label className="text-sm cursor-pointer flex-1">
+                            {config.label}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
+
+            {/* Filtro de Organização com Multi-Seleção */}
             <div>
               <label className="text-sm font-medium mb-1 block">
                 Organização
               </label>
-              <Select
-                value={organizationFilter}
-                onValueChange={setOrganizationFilter}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {orgOptions.map((org) => (
-                    <SelectItem key={org.id} value={String(org.id)}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={isOrgPopoverOpen} onOpenChange={setIsOrgPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span className="truncate">{getOrgSelectorText()}</span>
+                    <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0" align="start">
+                  <div className="p-2 space-y-1">
+                    {/* Opção "Todas" */}
+                    <div
+                      className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleOrganization("all");
+                      }}
+                    >
+                      <Checkbox
+                        checked={isAllOrgSelected}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleOrganization("all");
+                        }}
+                      />
+                      <label className="text-sm font-medium cursor-pointer flex-1">
+                        Todas as organizações
+                      </label>
+                    </div>
+                    
+                    <div className="border-t my-1" />
+                    
+                    {/* Lista de organizações */}
+                    <div className="max-h-64 overflow-y-auto">
+                      {orgOptions.map((org) => (
+                        <div
+                          key={org.id}
+                          className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleOrganization(String(org.id));
+                          }}
+                        >
+                          <Checkbox
+                            checked={organizationFilters.includes(String(org.id))}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleOrganization(String(org.id));
+                            }}
+                          />
+                          <label className="text-sm cursor-pointer flex-1">
+                            {org.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>
@@ -291,21 +438,21 @@ export default function AdminResults() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Lista de resultados</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base md:text-lg">Lista de resultados</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 {filteredResults.length} registros encontrados
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border">
+            <div className="rounded-lg border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Respondente</TableHead>
-                    <TableHead>Organização</TableHead>
+                    <TableHead className="hidden md:table-cell">Organização</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Atualização</TableHead>
+                    <TableHead className="hidden sm:table-cell">Atualização</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -316,7 +463,7 @@ export default function AdminResults() {
                         colSpan={5}
                         className="py-8 text-center text-sm text-muted-foreground"
                       >
-                        <Loader2 className="h-5 w-5 animate-spin inline-block mr-2" />
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
                         Carregando resultados...
                       </TableCell>
                     </TableRow>
@@ -335,44 +482,53 @@ export default function AdminResults() {
                     )}
 
                   {paginatedResults.map((result) => (
-                    <TableRow key={result.id}>
+                    <TableRow 
+                      key={result.id}
+                      className="cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={() => handleRowClick(result.id)}
+                    >
                       <TableCell>
                         <div className="font-medium">{result.name}</div>
                         <p className="text-xs text-muted-foreground">
                           {result.email}
                         </p>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {result.organizationName ?? "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={statusVariants[result.status] ?? "outline"}
-                        >
-                          {statusLabels[result.status] ?? result.status}
-                        </Badge>
+                        <StatusBadge status={result.status} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {result.status === "completed"
                           ? formatDate(result.updatedAt)
                           : formatDate(result.createdAt)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            asChild
+                          >
                             <Link href={`/admin/results/${result.id}`}>
-                              Ver detalhes
+                              <Eye className="h-4 w-4" />
+                              <span className="hidden sm:inline">Ver detalhes</span>
                             </Link>
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="text-destructive"
+                            className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={deleteMutation.isPending}
-                            onClick={() => openDeleteDialog(result)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDeleteDialog(result);
+                            }}
                           >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Excluir
+                            <Trash2 className="h-4 w-4" />
+                            <span className="hidden sm:inline">Excluir</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -384,29 +540,53 @@ export default function AdminResults() {
 
             {/* Paginação */}
             {filteredResults.length > 0 && (
-              <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-                <div>
-                  Página {currentPage} de {totalPages}
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span>Mostrar</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(value) => {
+                      setPageSize(Number(value));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span>por página</span>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() =>
-                      setPage((p) => Math.min(totalPages, p + 1))
-                    }
-                  >
-                    Próxima
-                  </Button>
+                <div className="flex items-center gap-4">
+                  <div>
+                    Página {currentPage} de {totalPages}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                    >
+                      Próxima
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
