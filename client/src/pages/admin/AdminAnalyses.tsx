@@ -64,9 +64,17 @@ export default function AdminAnalyses() {
   useAuth({ redirectOnUnauthenticated: true });
   const [, setLocation] = useLocation();
 
-  const [selectedGift, setSelectedGift] = useState<string>("");
-  const [organizationFilter, setOrganizationFilter] = useState<string>("all");
-  const [scope, setScope] = useState<Scope>("latestPerPerson");
+  // Restaurar filtros salvos ou usar padrões
+  const savedFilters = sessionStorage.getItem('analysisFilters');
+  const initialFilters = savedFilters ? JSON.parse(savedFilters) : {
+    selectedGift: "",
+    organizationFilter: "all",
+    scope: "latestPerPerson" as Scope,
+  };
+
+  const [selectedGift, setSelectedGift] = useState<string>(initialFilters.selectedGift);
+  const [organizationFilter, setOrganizationFilter] = useState<string>(initialFilters.organizationFilter);
+  const [scope, setScope] = useState<Scope>(initialFilters.scope);
 
 
   const organizationsQuery = trpc.adminOrganization.list.useQuery();
@@ -164,6 +172,12 @@ export default function AdminAnalyses() {
   };
 
   const handleViewResult = (testId: number) => {
+    // Salvar estado dos filtros antes de navegar
+    sessionStorage.setItem('analysisFilters', JSON.stringify({
+      selectedGift,
+      organizationFilter,
+      scope,
+    }));
     setLocation(`/admin/results/${testId}`);
   };
 
@@ -362,7 +376,7 @@ export default function AdminAnalyses() {
                   <SelectValue placeholder="Selecione um dom" />
                 </SelectTrigger>
                 <SelectContent>
-                  {GIFTS.map((gift) => (
+                  {[...GIFTS].sort((a, b) => a.localeCompare(b, 'pt-BR')).map((gift) => (
                     <SelectItem key={gift} value={gift}>
                       {gift}
                     </SelectItem>
@@ -442,8 +456,8 @@ export default function AdminAnalyses() {
               <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
-                    <CardTitle>Dons Manifestos</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-base md:text-lg">Dons Manifestos</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">
                       Pessoas que têm o dom <strong>{selectedGift}</strong> como manifesto
                     </CardDescription>
                   </div>
@@ -521,8 +535,8 @@ export default function AdminAnalyses() {
               <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
-                    <CardTitle>Dons Latentes</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-base md:text-lg">Dons Latentes</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">
                       Pessoas que têm o dom <strong>{selectedGift}</strong> como latente
                     </CardDescription>
                   </div>
@@ -573,15 +587,15 @@ export default function AdminAnalyses() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <Button
-                                  variant="ghost"
+                                  variant="outline"
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleViewResult(person.testId);
                                   }}
-                                  className="text-gray-900"
+                                  className="gap-2"
                                 >
-                                  <Eye className="h-4 w-4 mr-2" />
+                                  <Eye className="h-4 w-4" />
                                   <span className="hidden sm:inline">Ver Resultado</span>
                                 </Button>
                               </TableCell>
