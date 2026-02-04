@@ -1178,14 +1178,33 @@ export const appRouter = router({
         // === 2) montar lista de dons manifestos com percentual ===
         const manifestGifts = manifestScoresArr.map((item) => ({
           name: item.gift as string,
+          score: item.score as number,
           percentage: toPercentage(item.score as number, MANIFEST_MAX_SCORE),
         }));
 
         // === 3) montar lista de dons latentes com percentual ===
         const latentGifts = latentScoresArr.map((item) => ({
           name: item.gift as string,
+          score: item.score as number,
           percentage: toPercentage(item.score as number, LATENT_MAX_SCORE),
         }));
+        
+        // === Ordenar por score para ranking completo ===
+        const allManifestScores = [...manifestScoresArr]
+          .map((item) => ({
+            name: item.gift as string,
+            score: item.score as number,
+            percentage: toPercentage(item.score as number, MANIFEST_MAX_SCORE),
+          }))
+          .sort((a, b) => b.score - a.score);
+        
+        const allLatentScores = [...latentScoresArr]
+          .map((item) => ({
+            name: item.gift as string,
+            score: item.score as number,
+            percentage: toPercentage(item.score as number, LATENT_MAX_SCORE),
+          }))
+          .sort((a, b) => b.score - a.score);
 
         // === 4) avaliações externas (genéricas por enquanto) ===
         const externalAssessments = [
@@ -1216,6 +1235,8 @@ export const appRouter = router({
             : null,
           manifestGifts,
           latentGifts,
+          allManifestScores,
+          allLatentScores,
           externalAssessments,
         };
       }),

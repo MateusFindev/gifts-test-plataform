@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Download, Mail, Loader2, Edit2, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, Mail, Loader2, Edit2, Clock, AlertCircle, CheckCircle2, BarChart3 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -53,6 +53,9 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editOrganizationId, setEditOrganizationId] = useState<string>("");
+  
+  // Estado para modal de pontuação completa
+  const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
 
   // --- pega ID da URL e converte para número ---
   const resultIdParam = params?.resultId ?? "";
@@ -278,24 +281,27 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
 
             {/* Informações básicas */}
             <Card>
-              <CardContent className="pt-6">
+              <CardHeader>
+                <CardTitle className="text-xl">Informações sobre o Teste</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Organização</p>
-                    <p className="text-sm font-medium">
+                    <p className="text-sm text-muted-foreground mb-1">Organização</p>
+                    <p className="text-base font-medium">
                       {result.organizationName ?? "Não informada"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Criado em</p>
-                    <p className="text-sm font-medium">
+                    <p className="text-sm text-muted-foreground mb-1">Criado em</p>
+                    <p className="text-base font-medium">
                       {formatDate(result.createdAt)}
                     </p>
                   </div>
                   {isCompleted && (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Finalizado em</p>
-                      <p className="text-sm font-medium">
+                      <p className="text-sm text-muted-foreground mb-1">Finalizado em</p>
+                      <p className="text-base font-medium">
                         {formatDate(result.completedAt)}
                       </p>
                     </div>
@@ -439,10 +445,23 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
                 <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white">
                   <CardHeader>
-                    <CardTitle className="text-2xl text-blue-900">Dons Manifestos</CardTitle>
-                    <CardDescription>
-                      Principais dons identificados pelo teste completo
-                    </CardDescription>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-xl text-blue-900">Dons Manifestos</CardTitle>
+                        <CardDescription>
+                          Principais dons identificados pelo teste completo
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+                        onClick={() => setIsScoreModalOpen(true)}
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Ver pontuação completa</span>
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     {result.manifestGifts && result.manifestGifts.length > 0 ? (
@@ -470,10 +489,23 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
 
                 <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-white">
                   <CardHeader>
-                    <CardTitle className="text-2xl text-green-900">Dons Latentes</CardTitle>
-                    <CardDescription>
-                      Dons que podem ser estimulados e desenvolvidos
-                    </CardDescription>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-xl text-green-900">Dons Latentes</CardTitle>
+                        <CardDescription>
+                          Dons que podem ser estimulados e desenvolvidos
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 text-green-700 hover:text-green-900 hover:bg-green-100"
+                        onClick={() => setIsScoreModalOpen(true)}
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Ver pontuação completa</span>
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-4">
                     {result.latentGifts && result.latentGifts.length > 0 ? (
@@ -504,7 +536,7 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
               {result.externalAssessments && result.externalAssessments.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Avaliações Externas</CardTitle>
+                    <CardTitle className="text-xl">Avaliações Externas</CardTitle>
                     <CardDescription>Contribuições de pessoas próximas ao respondente</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -605,6 +637,94 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 )}
                 Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Pontuação Completa */}
+        <Dialog open={isScoreModalOpen} onOpenChange={setIsScoreModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Pontuação Completa dos Dons</DialogTitle>
+              <DialogDescription>
+                Ranking completo de todos os dons avaliados, ordenados por pontuação
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 py-4">
+              {/* Dons Manifestos */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-3 w-3 rounded-full bg-blue-600"></div>
+                  <h3 className="text-lg font-semibold text-blue-900">Dons Manifestos</h3>
+                </div>
+                <div className="space-y-2">
+                  {result.allManifestScores && result.allManifestScores.length > 0 ? (
+                    result.allManifestScores.map((gift, index) => (
+                      <div
+                        key={gift.name}
+                        className="flex items-center justify-between p-3 rounded-lg border border-blue-100 bg-blue-50/30 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <span className="font-medium text-gray-900">{gift.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                            {gift.percentage}%
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {gift.score}/20
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Dons Latentes */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-3 w-3 rounded-full bg-green-600"></div>
+                  <h3 className="text-lg font-semibold text-green-900">Dons Latentes</h3>
+                </div>
+                <div className="space-y-2">
+                  {result.allLatentScores && result.allLatentScores.length > 0 ? (
+                    result.allLatentScores.map((gift, index) => (
+                      <div
+                        key={gift.name}
+                        className="flex items-center justify-between p-3 rounded-lg border border-green-100 bg-green-50/30 hover:bg-green-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <span className="font-medium text-gray-900">{gift.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                            {gift.percentage}%
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {gift.score}/12
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsScoreModalOpen(false)}>
+                Fechar
               </Button>
             </DialogFooter>
           </DialogContent>
