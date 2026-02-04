@@ -175,12 +175,12 @@ export default function AdminAnalyses() {
         {/* Cabeçalho */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
+            <p className="text-sm text-muted-foreground">
+              Visualize quais pessoas possuem um dom específico
+            </p>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
               Análises por Dom
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Visualize quais pessoas possuem um dom específico como manifesto ou latente
-            </p>
           </div>
           <Button
             variant="outline"
@@ -261,23 +261,11 @@ export default function AdminAnalyses() {
           </CardContent>
         </Card>
 
-        {/* Tabela de Resultados */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <CardTitle>
-                {selectedGift ? `Resultados para "${selectedGift}"` : "Resultados"}
-              </CardTitle>
-              {hasLoaded && allResults.length > 0 && (
-                <Badge variant="outline">
-                  {allResults.length} resultado{allResults.length === 1 ? "" : "s"}
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {selectedGift.length === 0 ? (
-              <div className="py-12 text-center">
+        {/* Resultados - Dons Manifestos */}
+        {selectedGift.length === 0 ? (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center">
                 <p className="text-sm font-medium text-muted-foreground">
                   Selecione um dom para visualizar os resultados
                 </p>
@@ -285,141 +273,234 @@ export default function AdminAnalyses() {
                   Use os filtros acima para começar a análise
                 </p>
               </div>
-            ) : isLoading ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
+            </CardContent>
+          </Card>
+        ) : isLoading ? (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center text-sm text-muted-foreground">
                 Carregando análises...
               </div>
-            ) : allResults.length === 0 ? (
-              <div className="py-12 text-center">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Nenhum resultado encontrado
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tente ajustar os filtros ou selecionar outro dom
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead className="hidden md:table-cell">E-mail</TableHead>
-                        <TableHead className="hidden lg:table-cell">Organização</TableHead>
-                        <TableHead className="hidden sm:table-cell">Realizado em</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentResults.map((person) => {
-                        const dateIso = person.completedAt ?? person.createdAt;
-                        return (
-                          <TableRow 
-                            key={`${person.testId}-${person.type}`}
-                            className="cursor-pointer hover:bg-gray-50"
-                            onClick={() => handleViewResult(person.testId)}
-                          >
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  person.type === "manifest"
-                                    ? "border-blue-200 bg-blue-50 text-blue-700"
-                                    : "border-green-200 bg-green-50 text-green-700"
-                                }
-                              >
-                                {person.type === "manifest" ? "Manifesto" : "Latente"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {person.name}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                              {person.email}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                              {person.organizationName ?? "-"}
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                              {formatDateTime(dateIso)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleViewResult(person.testId);
-                                }}
-                                className="gap-2"
-                              >
-                                <Eye className="h-4 w-4" />
-                                <span className="hidden sm:inline">Ver Resultado</span>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Paginação */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Itens por página:
-                    </span>
-                    <Select
-                      value={String(itemsPerPage)}
-                      onValueChange={(value) => {
-                        setItemsPerPage(Number(value));
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <SelectTrigger className="w-[70px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5</SelectItem>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Dons Manifestos */}
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <CardTitle>Dons Manifestos</CardTitle>
+                    <CardDescription>
+                      Pessoas que têm o dom <strong>{selectedGift}</strong> como manifesto
+                    </CardDescription>
                   </div>
+                  {manifest.length > 0 && (
+                    <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
+                      {manifest.length} resultado{manifest.length === 1 ? "" : "s"}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {manifest.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Nenhum resultado encontrado para este dom (manifesto)
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead className="hidden md:table-cell">E-mail</TableHead>
+                          <TableHead className="hidden lg:table-cell">Organização</TableHead>
+                          <TableHead className="hidden sm:table-cell">Realizado em</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {manifest.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((person) => {
+                          const dateIso = person.completedAt ?? person.createdAt;
+                          return (
+                            <TableRow 
+                              key={person.testId}
+                              className="cursor-pointer hover:bg-gray-50"
+                              onClick={() => handleViewResult(person.testId)}
+                            >
+                              <TableCell className="font-medium">
+                                {person.name}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                                {person.email}
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                                {person.organizationName ?? "-"}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                                {formatDateTime(dateIso)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewResult(person.testId);
+                                  }}
+                                  className="text-gray-900"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  <span className="hidden sm:inline">Ver Resultado</span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Página {currentPage} de {totalPages}
-                    </span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
+            {/* Dons Latentes */}
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <CardTitle>Dons Latentes</CardTitle>
+                    <CardDescription>
+                      Pessoas que têm o dom <strong>{selectedGift}</strong> como latente
+                    </CardDescription>
+                  </div>
+                  {latent.length > 0 && (
+                    <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
+                      {latent.length} resultado{latent.length === 1 ? "" : "s"}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {latent.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Nenhum resultado encontrado para este dom (latente)
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead className="hidden md:table-cell">E-mail</TableHead>
+                          <TableHead className="hidden lg:table-cell">Organização</TableHead>
+                          <TableHead className="hidden sm:table-cell">Realizado em</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {latent.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((person) => {
+                          const dateIso = person.completedAt ?? person.createdAt;
+                          return (
+                            <TableRow 
+                              key={person.testId}
+                              className="cursor-pointer hover:bg-gray-50"
+                              onClick={() => handleViewResult(person.testId)}
+                            >
+                              <TableCell className="font-medium">
+                                {person.name}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                                {person.email}
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                                {person.organizationName ?? "-"}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                                {formatDateTime(dateIso)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewResult(person.testId);
+                                  }}
+                                  className="text-gray-900"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  <span className="hidden sm:inline">Ver Resultado</span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Paginação (apenas se houver resultados) */}
+            {(manifest.length > 0 || latent.length > 0) && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Itens por página:
+                      </span>
+                      <Select
+                        value={String(itemsPerPage)}
+                        onValueChange={(value) => {
+                          setItemsPerPage(Number(value));
+                          setCurrentPage(1);
+                        }}
                       >
-                        Anterior
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        Próxima
-                      </Button>
+                        <SelectTrigger className="w-[70px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Página {currentPage} de {Math.max(1, Math.ceil(Math.max(manifest.length, latent.length) / itemsPerPage))}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Anterior
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.min(Math.ceil(Math.max(manifest.length, latent.length) / itemsPerPage), p + 1))}
+                          disabled={currentPage >= Math.ceil(Math.max(manifest.length, latent.length) / itemsPerPage)}
+                        >
+                          Próxima
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
