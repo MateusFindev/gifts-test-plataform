@@ -885,21 +885,41 @@ export const appRouter = router({
         const tests = await getAllGiftTestsByEmail(input.email);
         
         // Buscar teste em andamento (não completado)
-        // Aceita testes mesmo sem respostas ainda (selfAnswers pode estar vazio)
         const inProgressTest = tests.find(
           test => test.status === "in_progress"
         );
 
-        if (!inProgressTest) {
-          return { hasInProgressTest: false };
+        // Buscar teste aguardando avaliações externas
+        const awaitingExternalTest = tests.find(
+          test => test.status === "awaiting_external" &&
+                  (!test.externalCompleted1 || !test.externalCompleted2)
+        );
+
+        if (!inProgressTest && !awaitingExternalTest) {
+          return { hasInProgressTest: false, hasAwaitingExternal: false };
         }
 
+        if (inProgressTest) {
+          return {
+            hasInProgressTest: true,
+            hasAwaitingExternal: false,
+            testId: inProgressTest.id,
+            name: inProgressTest.name,
+            selfAnswers: inProgressTest.selfAnswers,
+            createdAt: inProgressTest.createdAt,
+          };
+        }
+
+        // Se chegou aqui, tem teste aguardando avaliações
         return {
-          hasInProgressTest: true,
-          testId: inProgressTest.id,
-          name: inProgressTest.name,
-          selfAnswers: inProgressTest.selfAnswers,
-          createdAt: inProgressTest.createdAt,
+          hasInProgressTest: false,
+          hasAwaitingExternal: true,
+          testId: awaitingExternalTest!.id,
+          name: awaitingExternalTest!.name,
+          email: awaitingExternalTest!.email,
+          createdAt: awaitingExternalTest!.createdAt,
+          externalCompleted1: awaitingExternalTest!.externalCompleted1,
+          externalCompleted2: awaitingExternalTest!.externalCompleted2,
         };
       }),
 

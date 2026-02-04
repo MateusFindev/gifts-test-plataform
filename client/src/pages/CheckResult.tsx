@@ -10,8 +10,13 @@ import { Loader2, Calendar, CheckCircle2, Clock, AlertCircle, Copy, Check, Exter
 
 export default function CheckResult() {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("");
-  const [searchEmail, setSearchEmail] = useState("");
+  
+  // Obter email da URL se existir
+  const urlParams = new URLSearchParams(window.location.search);
+  const emailFromUrl = urlParams.get("email") || "";
+  
+  const [email, setEmail] = useState(emailFromUrl);
+  const [searchEmail, setSearchEmail] = useState(emailFromUrl);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   const { data: tests, isLoading, error } = trpc.giftTest.getAllResultsByEmail.useQuery(
