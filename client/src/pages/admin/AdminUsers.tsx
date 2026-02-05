@@ -8,9 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Filter, Plus, Users as UsersIcon, Loader2 } from "lucide-react";
+import { Filter, Plus, Users as UsersIcon, Loader2, ChevronDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -22,7 +24,8 @@ type UserFormState = {
   email: string;
   role: Role;
   password: string;
-  organizationId: number | null;
+  organizationId: number | null; // Para END_USER (single)
+  organizationIds: number[]; // Para ORG_ADMIN (multiple)
 };
 
 const emptyFormState: UserFormState = {
@@ -31,6 +34,7 @@ const emptyFormState: UserFormState = {
   role: "END_USER",
   password: "",
   organizationId: null,
+  organizationIds: [],
 };
 
 const roleLabels: Record<Role, string> = {
@@ -70,6 +74,12 @@ export default function AdminUsers() {
 
   const listQuery = trpc.adminUser.list.useQuery();
   const orgsQuery = trpc.adminUser.organizations.useQuery();
+  
+  // Query para buscar organizações de um usuário específico (para ORG_ADMIN)
+  const userOrgsQuery = trpc.adminUser.getUserOrganizations.useQuery(
+    { userId: editingId ?? 0 },
+    { enabled: editingId !== null && formState.role === "ORG_ADMIN" }
+  );
 
   const createMutation = trpc.adminUser.create.useMutation({
     onSuccess: async () => {
@@ -90,6 +100,8 @@ export default function AdminUsers() {
       await utils.adminUser.list.invalidate();
     },
   });
+  
+  const setUserOrganizationsMutation = trpc.adminUser.setUserOrganizations.useMutation();
 
   const users = listQuery.data ?? [];
   const organizations = orgsQuery.data ?? [];
@@ -124,17 +136,30 @@ export default function AdminUsers() {
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (id: number) => {
+  const openEditDialog = async (id: number) => {
     const user = users.find(u => u.id === id);
     if (!user) return;
 
     setEditingId(user.id);
+    
+    // Buscar organizações do usuário se for ORG_ADMIN
+    let userOrgIds: number[] = [];
+    if (user.role === "ORG_ADMIN") {
+      try {
+        const result = await utils.adminUser.getUserOrganizations.fetch({ userId: user.id });
+        userOrgIds = result.map(org => org.id);
+      } catch (error) {
+        console.error("Erro ao buscar organizações do usuário:", error);
+      }
+    }
+    
     setFormState({
       name: user.name,
       email: user.email,
       role: user.role,
       password: "",
       organizationId: user.organizationId ?? null,
+      organizationIds: userOrgIds,
     });
     setIsDialogOpen(true);
   };
@@ -152,15 +177,20 @@ export default function AdminUsers() {
     deleteMutation.mutate({ id });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formState.name.trim() || !formState.email.trim()) {
       alert("Nome e e-mail são obrigatórios.");
       return;
     }
 
-    const requiresOrg = formState.role !== "SUPER_ADMIN";
-    if (requiresOrg && !formState.organizationId) {
-      alert("Selecione uma organização para Admin de organização ou Usuário final.");
+    // Validação de organização
+    if (formState.role === "ORG_ADMIN" && formState.organizationIds.length === 0) {
+      alert("Selecione pelo menos uma organização para Admin de organização.");
+      return;
+    }
+    
+    if (formState.role === "END_USER" && !formState.organizationId) {
+      alert("Selecione uma organização para Usuário final.");
       return;
     }
 
@@ -168,25 +198,59 @@ export default function AdminUsers() {
       name: formState.name.trim(),
       email: formState.email.trim(),
       role: formState.role,
-      organizationId: requiresOrg ? formState.organizationId : null,
+      organizationId: formState.role === "END_USER" ? formState.organizationId : null,
     };
 
     if (editingId !== null) {
-      updateMutation.mutate({
+      // Atualizar usuário
+      await updateMutation.mutateAsync({
         id: editingId,
         ...basePayload,
         password: formState.password || null,
       });
+      
+      // Se for ORG_ADMIN, atualizar organizações
+      if (formState.role === "ORG_ADMIN") {
+        try {
+          await setUserOrganizationsMutation.mutateAsync({
+            userId: editingId,
+            organizationIds: formState.organizationIds,
+          });
+        } catch (error) {
+          console.error("Erro ao atualizar organizações:", error);
+          alert("Erro ao atualizar organizações do usuário.");
+        }
+      }
+      
+      await utils.adminUser.list.invalidate();
+      closeDialog();
     } else {
+      // Criar novo usuário
       if (!formState.password.trim()) {
         alert("A senha é obrigatória na criação do usuário.");
         return;
       }
 
-      createMutation.mutate({
+      const newUser = await createMutation.mutateAsync({
         ...basePayload,
         password: formState.password.trim(),
       });
+      
+      // Se for ORG_ADMIN, definir organizações
+      if (formState.role === "ORG_ADMIN" && newUser?.id) {
+        try {
+          await setUserOrganizationsMutation.mutateAsync({
+            userId: newUser.id,
+            organizationIds: formState.organizationIds,
+          });
+        } catch (error) {
+          console.error("Erro ao definir organizações:", error);
+          alert("Usuário criado, mas houve erro ao definir organizações.");
+        }
+      }
+      
+      await utils.adminUser.list.invalidate();
+      closeDialog();
     }
   };
 
@@ -418,8 +482,9 @@ export default function AdminUsers() {
                     setFormState(prev => ({
                       ...prev,
                       role: value as Role,
-                      // se virar SUPER_ADMIN, zera organização
-                      organizationId: value === "SUPER_ADMIN" ? null : prev.organizationId,
+                      // Limpar organizações ao mudar de role
+                      organizationId: value === "END_USER" ? prev.organizationId : null,
+                      organizationIds: value === "ORG_ADMIN" ? prev.organizationIds : [],
                     }))
                   }
                 >
@@ -434,38 +499,95 @@ export default function AdminUsers() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Organização {formState.role !== "SUPER_ADMIN" && <span className="text-red-500">*</span>}</Label>
-                <Select
-                  value={formState.organizationId ? String(formState.organizationId) : ""}
-                  onValueChange={value =>
-                    setFormState(prev => ({
-                      ...prev,
-                      organizationId: value ? Number(value) : null,
-                    }))
-                  }
-                  disabled={isOrgFieldDisabled || orgsQuery.isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        isOrgFieldDisabled
-                          ? "Não aplicável para Super Admin"
-                          : orgsQuery.isLoading
-                          ? "Carregando organizações..."
-                          : "Selecione uma organização"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {organizations.map(org => (
-                      <SelectItem key={org.id} value={String(org.id)}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Campo de Organização - Multi-select para ORG_ADMIN, Single para END_USER */}
+              {formState.role === "ORG_ADMIN" ? (
+                <div className="space-y-2">
+                  <Label>Organizações <span className="text-red-500">*</span></Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-between"
+                        disabled={orgsQuery.isLoading}
+                      >
+                        <span className="truncate">
+                          {formState.organizationIds.length === 0
+                            ? "Selecione organizações"
+                            : formState.organizationIds.length === 1
+                            ? organizations.find(o => o.id === formState.organizationIds[0])?.name
+                            : `${formState.organizationIds.length} organizações selecionadas`}
+                        </span>
+                        <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
+                        {organizations.map(org => (
+                          <div
+                            key={org.id}
+                            className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              setFormState(prev => {
+                                const isSelected = prev.organizationIds.includes(org.id);
+                                return {
+                                  ...prev,
+                                  organizationIds: isSelected
+                                    ? prev.organizationIds.filter(id => id !== org.id)
+                                    : [...prev.organizationIds, org.id],
+                                };
+                              });
+                            }}
+                          >
+                            <Checkbox
+                              checked={formState.organizationIds.includes(org.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <label className="text-sm cursor-pointer flex-1">
+                              {org.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              ) : formState.role === "END_USER" ? (
+                <div className="space-y-2">
+                  <Label>Organização <span className="text-red-500">*</span></Label>
+                  <Select
+                    value={formState.organizationId ? String(formState.organizationId) : ""}
+                    onValueChange={value =>
+                      setFormState(prev => ({
+                        ...prev,
+                        organizationId: value ? Number(value) : null,
+                      }))
+                    }
+                    disabled={orgsQuery.isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          orgsQuery.isLoading
+                            ? "Carregando organizações..."
+                            : "Selecione uma organização"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizations.map(org => (
+                        <SelectItem key={org.id} value={String(org.id)}>
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Organização</Label>
+                  <Input disabled value="Não aplicável para Super Admin" />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>
