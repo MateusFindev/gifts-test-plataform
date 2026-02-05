@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Card,
@@ -41,6 +41,7 @@ import { ptBR } from "date-fns/locale";
 import { Link, useLocation } from "wouter";
 import { StatusBadge } from "@/components/StatusBadge";
 import { STATUS_CONFIG } from "@/lib/status-config";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const formatDate = (date?: string) => {
   if (!date) return "--";
@@ -59,6 +60,8 @@ type AdminResult = {
 };
 
 export default function AdminResults() {
+  const { user } = useAuth();
+  
   // Multi-seleção de status e organizações
   const [statusFilters, setStatusFilters] = useState<string[]>(["all"]);
   const [organizationFilters, setOrganizationFilters] = useState<string[]>(["all"]);
@@ -71,7 +74,14 @@ export default function AdminResults() {
 
   const utils = trpc.useUtils();
 
-  const organizationsQuery = trpc.adminOrganization.list.useQuery();
+  // Buscar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
+  const myOrgsQuery = trpc.auth.myOrganizations.useQuery();
+  const userOrganizations = myOrgsQuery.data ?? [];
+  
+  const organizationsQuery = trpc.adminOrganization.list.useQuery(
+    undefined,
+    { enabled: user?.role === "SUPER_ADMIN" }
+  );
   const listQuery = trpc.adminResult.list.useQuery();
   const deleteMutation = trpc.adminResult.delete.useMutation({
     onSuccess: async () => {
@@ -165,11 +175,23 @@ export default function AdminResults() {
     currentPage * pageSize,
   );
 
-  const orgOptions =
-    organizationsQuery.data?.map((org) => ({
-      id: org.id,
-      name: org.name,
-    })) ?? [];
+  // Usar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
+  const availableOrganizations = useMemo(
+    () => user?.role === "SUPER_ADMIN" ? (organizationsQuery.data ?? []) : userOrganizations,
+    [user?.role, organizationsQuery.data, userOrganizations]
+  );
+  
+  const orgOptions = availableOrganizations.map((org) => ({
+    id: org.id,
+    name: org.name,
+  }));
+  
+  // Auto-selecionar se ORG_ADMIN tem apenas 1 organização
+  useEffect(() => {
+    if (user?.role === "ORG_ADMIN" && userOrganizations.length === 1) {
+      setOrganizationFilters([String(userOrganizations[0].id)]);
+    }
+  }, [user?.role, userOrganizations]);
 
   // --- Modal exclusão ---
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -203,7 +225,12 @@ export default function AdminResults() {
   };
 
   const getOrgSelectorText = () => {
-    if (isAllOrgSelected) return "Todas as organizações";
+    // Para ORG_ADMIN com múltiplas organizações, "all" significa "todas as minhas organizações"
+    if (isAllOrgSelected) {
+      return user?.role === "ORG_ADMIN" && userOrganizations.length > 1
+        ? "Todas as minhas organizações"
+        : "Todas as organizações";
+    }
     if (organizationFilters.length === 1) {
       const org = orgOptions.find(o => String(o.id) === organizationFilters[0]);
       return org?.name ?? "Organizações";
@@ -397,7 +424,9 @@ export default function AdminResults() {
                         }}
                       />
                       <label className="text-sm font-medium cursor-pointer flex-1">
-                        Todas as organizações
+                        {user?.role === "ORG_ADMIN" && userOrganizations.length > 1
+                          ? "Todas as minhas organizações"
+                          : "Todas as organizações"}
                       </label>
                     </div>
                     

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Card,
@@ -62,7 +62,7 @@ const formatDateTime = (iso: string | null | undefined) => {
 };
 
 export default function AdminAnalyses() {
-  useAuth({ redirectOnUnauthenticated: true });
+  const { user } = useAuth({ redirectOnUnauthenticated: true });
   const [, setLocation] = useLocation();
 
   // Restaurar filtros salvos ou usar padrões
@@ -77,9 +77,29 @@ export default function AdminAnalyses() {
   const [organizationFilter, setOrganizationFilter] = useState<string>(initialFilters.organizationFilter);
   const [scope, setScope] = useState<Scope>(initialFilters.scope);
 
-
-  const organizationsQuery = trpc.adminOrganization.list.useQuery();
-  const orgOptions = organizationsQuery.data ?? [];
+  // Buscar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
+  const myOrgsQuery = trpc.auth.myOrganizations.useQuery();
+  const userOrganizations = myOrgsQuery.data ?? [];
+  
+  const organizationsQuery = trpc.adminOrganization.list.useQuery(
+    undefined,
+    { enabled: user?.role === "SUPER_ADMIN" }
+  );
+  
+  // Usar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
+  const availableOrganizations = useMemo(
+    () => user?.role === "SUPER_ADMIN" ? (organizationsQuery.data ?? []) : userOrganizations,
+    [user?.role, organizationsQuery.data, userOrganizations]
+  );
+  
+  const orgOptions = availableOrganizations;
+  
+  // Auto-selecionar se ORG_ADMIN tem apenas 1 organização
+  useEffect(() => {
+    if (user?.role === "ORG_ADMIN" && userOrganizations.length === 1) {
+      setOrganizationFilter(String(userOrganizations[0].id));
+    }
+  }, [user?.role, userOrganizations]);
   
   const analysisQuery = trpc.adminAnalysis.byGift.useQuery(
     {
@@ -180,7 +200,9 @@ export default function AdminAnalyses() {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     const orgName = organizationFilter === "all" 
-      ? "Todas as organizações" 
+      ? (user?.role === "ORG_ADMIN" && userOrganizations.length > 1
+          ? "Todas as minhas organizações"
+          : "Todas as organizações")
       : orgOptions.find(o => String(o.id) === organizationFilter)?.name ?? "";
     doc.text(`Organização: ${orgName}`, 14, yPos);
     yPos += 6;
@@ -381,8 +403,12 @@ export default function AdminAnalyses() {
                   <SelectValue placeholder="Todas as organizações" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as organizações</SelectItem>
-                  {organizationsQuery.data?.map((org) => (
+                  <SelectItem value="all">
+                    {user?.role === "ORG_ADMIN" && userOrganizations.length > 1
+                      ? "Todas as minhas organizações"
+                      : "Todas as organizações"}
+                  </SelectItem>
+                  {availableOrganizations.map((org) => (
                     <SelectItem key={org.id} value={String(org.id)}>
                       {org.name}
                     </SelectItem>
