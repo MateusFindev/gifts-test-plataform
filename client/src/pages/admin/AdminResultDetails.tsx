@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,9 +83,20 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
     },
   );
 
-  // Buscar organizações para o select
-  const organizationsQuery = trpc.adminOrganization.list.useQuery();
-  const organizations = organizationsQuery.data ?? [];
+  // Buscar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
+  const myOrgsQuery = trpc.auth.myOrganizations.useQuery();
+  const userOrganizations = myOrgsQuery.data ?? [];
+  
+  const organizationsQuery = trpc.adminOrganization.list.useQuery(
+    undefined,
+    { enabled: user?.role === "SUPER_ADMIN" }
+  );
+  
+  // Usar organizações do usuário (SUPER_ADMIN vê todas, ORG_ADMIN vê apenas as suas)
+  const organizations = useMemo(
+    () => user?.role === "SUPER_ADMIN" ? (organizationsQuery.data ?? []) : userOrganizations,
+    [user?.role, organizationsQuery.data, userOrganizations]
+  );
 
   // Mutation para atualizar o resultado
   const updateMutation = trpc.adminResult.update.useMutation({
@@ -819,7 +830,10 @@ export default function AdminResultDetails({ params }: AdminResultDetailsProps) 
                     <SelectValue placeholder="Selecione uma organização" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma organização</SelectItem>
+                    {/* ORG_ADMIN não pode deixar sem organização */}
+                    {user?.role === "SUPER_ADMIN" && (
+                      <SelectItem value="none">Nenhuma organização</SelectItem>
+                    )}
                     {organizations.map((org) => (
                       <SelectItem key={org.id} value={String(org.id)}>
                         {org.name}
